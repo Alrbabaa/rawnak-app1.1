@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal Links: lets Safari/Mail/Messages hand a tapped
+	     https://rawnak.app/... link straight to this app (when installed)
+	     instead of opening the browser. Requires the matching
+	     /.well-known/apple-app-site-association file to be live on
+	     rawnak.app with the real Apple Team ID filled in — see that file's
+	     own comment for the exact value to replace. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:rawnak.app</string>
+	</array>
+	<!-- Required for native "Sign in with Apple" (ASAuthorizationAppleIDProvider,
+	     used via @capacitor-community/apple-sign-in — see
+	     src/lib/firebase/apple-native-signin.ts). App Store Review Guideline
+	     4.8 expects the native Apple ID flow on iOS when another third-party
+	     login (Google) is also offered — this capability must ALSO be
+	     enabled for "Sign in with Apple" under Signing & Capabilities in
+	     Xcode (and on the App ID in the Apple Developer portal) before this
+	     entitlement will actually work; adding the key here alone isn't
+	     sufficient without that. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>

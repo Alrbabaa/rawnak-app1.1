@@ -1,0 +1,190 @@
+rules_version = '2';
+
+/**
+ * Rawnak — Firestore Security Rules
+ *
+ * ARCHITECTURE FACT (verified by auditing the actual codebase, not assumed):
+ * the client app NEVER imports `firebase/firestore` — every single read and
+ * write goes through this project's own Next.js API routes, which use the
+ * Firebase ADMIN SDK server-side (src/lib/firebase/admin.ts). The Admin SDK
+ * bypasses Security Rules entirely by design — these rules govern a
+ * different, second door: anyone who takes the public NEXT_PUBLIC_FIREBASE_*
+ * config (not a secret, by Firebase's own design) and writes their OWN code
+ * to talk to this project's Firestore directly, bypassing the app and its
+ * authorization logic (session checks, rate limits, role checks) entirely.
+ *
+ * Given that, the correct rule for every collection actually used by this
+ * app is DENY ALL direct client access. This is not a placeholder or an
+ * unfinished state — it is the deliberate, correct posture for this
+ * architecture. If a future feature ever needs the client SDK to talk to
+ * Firestore directly, rules for that specific collection should be added
+ * deliberately at that time, not opened broadly now.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Explicitly enumerate every collection this app actually uses, so a
+    // typo'd or forgotten collection doesn't accidentally fall through to
+    // an open default. Everything is server-only.
+
+    match /users/{uid} {
+      allow read, write: if false;
+
+      match /academy_quiz_results/{resultId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly([
+            'videoId', 'videoTitle', 'scorePercent', 'correctAnswersCount',
+            'totalQuestions', 'timestamp', 'answersSummary', 'createdAt'
+          ])
+          && request.resource.data.videoId is string
+          && request.resource.data.videoTitle is string
+          && request.resource.data.scorePercent is number
+          && request.resource.data.scorePercent >= 0
+          && request.resource.data.scorePercent <= 100
+          && request.resource.data.correctAnswersCount is number
+          && request.resource.data.correctAnswersCount >= 0
+          && request.resource.data.totalQuestions is number
+          && request.resource.data.totalQuestions > 0
+          && request.resource.data.correctAnswersCount <= request.resource.data.totalQuestions
+          && request.resource.data.timestamp is number
+          && request.resource.data.answersSummary is list
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+
+      match /{subcollection}/{docId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /picks/{id} {
+      allow read, write: if false;
+    }
+
+    match /articles/{id} {
+      allow read, write: if false;
+    }
+
+    match /academyVideos/{id} {
+      allow read, write: if false;
+    }
+
+    match /partners/{id} {
+      allow read, write: if false;
+    }
+
+    match /auditLog/{id} {
+      allow read, write: if false;
+    }
+
+    match /settings/{id} {
+      allow read, write: if false;
+    }
+
+    match /activity/{id} {
+      allow read, write: if false;
+    }
+
+    match /referralPartners/{id} {
+      allow read, write: if false;
+
+      match /referrals/{uid} {
+        allow read, write: if false;
+      }
+    }
+
+    // Peer-referral code -> uid lookup (see src/lib/referral.ts and
+    // /api/auth/complete-signup). Server-only, same as everything else.
+    match /referralCodes/{code} {
+      allow read, write: if false;
+    }
+
+    // Idempotency ledger for the RevenueCat webhook — see
+    // src/app/api/webhooks/revenuecat/route.ts. Server-only, same as
+    // everything else here.
+    match /webhookEvents/{id} {
+      allow read, write: if false;
+    }
+
+    // "صديقة التوهج" buddy invite code -> uid lookup — see
+    // src/lib/buddy.ts and /api/buddy/link. Same pattern as
+    // referralCodes above. Server-only.
+    match /buddyInviteCodes/{code} {
+      allow read, write: if false;
+    }
+
+    // "صديقة التوهج" pairing docs — see /api/buddy/link and
+    // /api/buddy/status. Server-only; the whole point of routing this
+    // through Admin-SDK API routes instead of opening it to the client
+    // SDK is that /api/buddy/status enforces the boolean-only privacy
+    // contract in src/lib/buddy.ts before anything reaches the client —
+    // a direct rule here could never do that filtering.
+    match /buddyPairs/{pairId} {
+      allow read, write: if false;
+    }
+
+    // Follow-graph edges for the "بحث بالاسم" social directory — see
+    // /api/social/follow, /unfollow, /following, /followers. Same
+    // server-only pattern as everything above: all reads/writes go
+    // through the Admin SDK in those API routes (which verify the caller's
+    // session and compute things like the streak-story visibility gate
+    // server-side), never the client SDK directly.
+    match /follows/{edgeId} {
+      allow read, write: if false;
+    }
+
+    // Deliberate, narrow exception to the "deny all" architecture described
+    // in this file's header — src/lib/firebase/gamification-service.ts
+    // writes academy XP/level/badges directly from the CLIENT Firebase SDK
+    // (not through an API route like literally everything else in this
+    // app), so without a rule here every write/read was silently rejected
+    // by the deny-by-default fallback below. The app degrades gracefully
+    // when that happens (XP/level/badges still work from localStorage —
+    // see saveLocalGamificationData) but the actual cross-user leaderboard
+    // never populated: nobody's score ever reached Firestore.
+    //
+    // SECURITY NOTE: this is a lightweight, non-monetary leaderboard
+    // (bragging rights only) — nothing of real value is granted anywhere
+    // in the app based on this xp value. The constraints below (can only
+    // write your OWN doc, xp bounded 0-100000, xp can't jump by more than
+    // 500 in a single write) meaningfully raise the bar against casual
+    // tampering via browser devtools, but a determined attacker can still
+    // inflate their own score over many small writes — that trade-off is
+    // acceptable ONLY because nothing of real value depends on it. If a
+    // reward with real value (a discount, a VIP grant, ...) is ever tied
+    // to this number, xp must be computed server-side via an API route
+    // instead (same pattern as feature-gate.ts) — do not widen this rule
+    // for that purpose; add a proper server-computed path instead.
+    match /academy_leaderboard/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'name', 'avatar', 'xp', 'level', 'levelTitle',
+          'badgesCount', 'completedCount', 'completedLessons',
+          'completedQuizzes', 'badges', 'notesCount', 'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.xp is number
+        && request.resource.data.xp >= 0
+        && request.resource.data.xp <= 100000
+        && request.resource.data.level is number
+        && request.resource.data.badgesCount is number
+        && request.resource.data.completedCount is number
+        && request.resource.data.completedLessons is list
+        && request.resource.data.completedQuizzes is list
+        && request.resource.data.badges is list
+        && request.resource.data.notesCount is number
+        && request.resource.data.updatedAt == request.time
+        && (!resource.exists() || request.resource.data.xp <= resource.data.xp + 500);
+    }
+
+    // Deny-by-default for anything not explicitly listed above (defense
+    // against a future collection being added to the app but forgotten here).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

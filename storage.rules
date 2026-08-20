@@ -1,0 +1,27 @@
+rules_version = '2';
+
+/**
+ * Rawnak — Firebase Storage Security Rules
+ *
+ * Same architecture fact as firestore.rules: the client never imports
+ * `firebase/storage`. Uploads (src/lib/firebase/upload-image.ts) happen
+ * exclusively server-side via the Admin SDK, which bypasses these rules.
+ *
+ * IMPORTANT NUANCE: uploaded files are also made public via
+ * `file.makePublic()` (a Google Cloud Storage ACL, not a Firebase Rules
+ * concept) and served from a direct `storage.googleapis.com/...` URL
+ * stored in Firestore — that read path does NOT go through these Storage
+ * Rules at all (ACL-based public objects bypass Firebase's rule-evaluation
+ * layer). These rules therefore do not need to (and structurally cannot)
+ * grant read access for that existing flow; they only govern access
+ * attempted via the Firebase Storage SDK/REST API directly, which this app
+ * never does. Denying it here closes that second door, matching
+ * firestore.rules' reasoning exactly.
+ */
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

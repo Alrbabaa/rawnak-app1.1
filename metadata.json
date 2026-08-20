@@ -1,0 +1,6 @@
+{
+  "name": "Rawnak",
+  "description": "رَونق — خبيرة الجمال والبشرة الشخصية بالذكاء الاصطناعي",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

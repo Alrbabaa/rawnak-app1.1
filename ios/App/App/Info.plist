@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+        <string>رَونق</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+
+	<!-- Export compliance: the app only uses standard HTTPS/TLS (via
+	     Firebase, RevenueCat, etc.), which is exempt under Apple's
+	     encryption export rules. Declaring this here answers the
+	     "Does your app use encryption?" question automatically at every
+	     App Store Connect upload instead of prompting for it manually
+	     each time. Change to <true/> — and follow Apple's export
+	     compliance documentation — if the app ever adds any encryption
+	     beyond standard TLS (e.g. end-to-end encrypted messaging). -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<!-- Camera: skin analysis + product scanning -->
+	<key>NSCameraUsageDescription</key>
+	<string>يحتاج رَونق الكاميرا لتحليل بشرتكِ ومسح المنتجات مباشرة.</string>
+
+	<!-- Photo library: choosing an existing photo instead of taking a new one -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يحتاج رَونق الوصول لمكتبة الصور لاختيار صورة لتحليل بشرتكِ أو مسح منتج.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>لحفظ نتائج المقارنة (قبل وبعد) بمكتبة صورك إذا اخترتِ ذلك.</string>
+
+	<!-- Location: real current-weather widget on the home screen -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>يستخدم رَونق موقعكِ لعرض حالة الطقس الفعلية واقتراح نصائح عناية مناسبة لها.</string>
+
+	<!-- Deep links: rawnak://open/chat, rawnak://referral/CODE, etc.
+	     (custom scheme, works today). Universal Links
+	     (https://rawnak.app/...) are wired up via the Associated Domains
+	     entitlement (App.entitlements) — they'll start working once
+	     /.well-known/apple-app-site-association on rawnak.app has the
+	     real Apple Team ID filled in (currently a placeholder there).
+	     Until then this custom scheme is the only deep link that works,
+	     same as before. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>rawnak</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.artisticminds.rawnak</string>
+		</dict>
+	</array>
+</dict>
+</plist>

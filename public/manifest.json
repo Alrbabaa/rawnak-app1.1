@@ -1,0 +1,33 @@
+{
+  "name": "رَونق — مساعدتك الذكية للجمال",
+  "short_name": "رَونق",
+  "description": "خبيرة الجمال والعناية بالبشرة الشخصية بالذكاء الاصطناعي",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0c",
+  "theme_color": "#0a0a0c",
+  "categories": ["beauty", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "/rawnak-icon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/rawnak-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/rawnak-logo.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
