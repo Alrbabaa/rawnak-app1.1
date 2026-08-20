@@ -12,6 +12,18 @@ import firebaseConfig from "../../../firebase-applet-config.json";
  */
 let appInstance: App | null = null;
 
+function normalizePrivateKey(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  let normalized = value.trim();
+  if (
+    (normalized.startsWith('"') && normalized.endsWith('"')) ||
+    (normalized.startsWith("'") && normalized.endsWith("'"))
+  ) {
+    normalized = normalized.slice(1, -1);
+  }
+  return normalized.replace(/\\n/g, "\n");
+}
+
 function getAdminApp(): App {
   if (appInstance) return appInstance;
   if (getApps().length > 0) {
@@ -24,7 +36,7 @@ function getAdminApp(): App {
     || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
     || firebaseConfig.storageBucket;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
 
   if (clientEmail && privateKey) {
     appInstance = initializeApp({

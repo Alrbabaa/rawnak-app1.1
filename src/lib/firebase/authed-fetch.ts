@@ -20,5 +20,21 @@ export async function authedFetch(url: string, options: RequestInit = {}): Promi
   const headers = new Headers(options.headers);
   if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
 
-  return fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...options, headers });
+
+  // Some hosting/platform failures return an empty 5xx response. Admin
+  // screens expect JSON, so turn that empty body into a useful JSON error
+  // instead of throwing "Unexpected end of JSON input" in the browser.
+  if (!response.ok && !(await response.clone().text())) {
+    return new Response(
+      JSON.stringify({ error: "تعذّر تنفيذ الطلب على الخادم. راجعي سجلات Vercel وإعدادات Firebase Admin." }),
+      {
+        status: response.status,
+        statusText: response.statusText,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      }
+    );
+  }
+
+  return response;
 }
