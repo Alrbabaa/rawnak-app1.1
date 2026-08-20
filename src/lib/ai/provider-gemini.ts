@@ -8,7 +8,7 @@
  *   GEMINI_API_KEY=...      (required, throws clearly if missing)
  *   GEMINI_MODEL=...        (optional — defaults to DEFAULT_MODEL below;
  *                            change models any time without touching code,
- *                            e.g. "gemini-2.5-pro" for heavier reasoning)
+ *                            e.g. "gemini-3.5-flash" for heavier reasoning)
  *
  * Docs: https://ai.google.dev/api/generate-content
  */
@@ -17,7 +17,7 @@ import type { AiProvider, ChatMessage } from "./service";
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 // Only used when GEMINI_MODEL is unset — never hardcoded into a request path.
-const DEFAULT_MODEL = "gemini-3.6-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 
 interface GeminiPart {
   text?: string;
