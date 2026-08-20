@@ -5,15 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore, type CabinetProduct } from "@/lib/store";
 import { useCameraCapture } from "@/hooks/use-camera";
 import { authedFetch } from "@/lib/firebase/authed-fetch";
-import { canUseFeature, remainingFreeUses } from "@/lib/features";
-import { useHasVipAccess } from "@/hooks/use-vip-access";
 import { CABINET_CATEGORIES } from "@/lib/data";
 import {
   ScanLine,
   ImagePlus,
   Sparkles,
   X,
-  Crown,
   CheckCircle2,
   SwitchCamera,
   RefreshCw,
@@ -22,7 +19,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -43,8 +39,7 @@ function topCategoryFor(subCategory: string): string {
 }
 
 export function CabinetScanScreen() {
-  const { addCabinetProduct, profile, setView } = useAppStore();
-  const hasVipAccess = useHasVipAccess();
+  const { addCabinetProduct, setView } = useAppStore();
   const {
     videoRef,
     fileInputRef,
@@ -65,8 +60,6 @@ export function CabinetScanScreen() {
   const [items, setItems] = useState<DetectedItem[] | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const allowed = canUseFeature("cabinetAiScan", hasVipAccess, profile.cabinetAiScanUsed);
-  const remaining = remainingFreeUses("cabinetAiScan", profile.cabinetAiScanUsed);
 
   const startCamRef = useRef(startCamera);
   useLayoutEffect(() => {
@@ -197,39 +190,6 @@ export function CabinetScanScreen() {
     setView("cabinet");
   };
 
-  if (!allowed) {
-    return (
-      <div className="py-3 space-y-4">
-        <button
-          onClick={() => setView("cabinet")}
-          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-        >
-          <X className="w-4 h-4" />
-          العودة
-        </button>
-        <div className="flex flex-col items-center text-center gap-4 py-10">
-          <div className="w-16 h-16 rounded-2xl rawnak-rosegold-gradient grid place-items-center">
-            <Crown className="w-8 h-8 text-black" />
-          </div>
-          <div>
-            <h2 className="font-extrabold text-lg">استخدمتِ تجربتكِ المجانية ✦</h2>
-            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-              مسح الخزانة بالذكاء الاصطناعي ميزة VIP بعد التجربة المجانية الأولى — رقّي
-              لمسح مجموعتكِ بالكامل دفعة واحدة أي وقت.
-            </p>
-          </div>
-          <Button
-            onClick={() => setView("vip")}
-            className="rounded-2xl h-12 px-6 rawnak-rosegold-gradient text-black font-bold"
-          >
-            <Crown className="w-4 h-4 ml-1.5" />
-            الترقية إلى VIP
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="py-3 space-y-4">
       <button
@@ -249,11 +209,6 @@ export function CabinetScanScreen() {
           <p className="text-sm text-muted-foreground mt-1">
             صوّري حقيبة مكياجكِ أو رف منتجاتكِ، وستكتشف رَونق كل قطعة تلقائيًا
           </p>
-          {!hasVipAccess && (
-            <Badge variant="outline" className="mt-2 rounded-full text-[10px]">
-              {remaining > 0 ? `تجربة مجانية متبقية: ${remaining}` : "بلا تجارب متبقية"}
-            </Badge>
-          )}
         </div>
       )}
 

@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FieldValue } from "firebase-admin/firestore";
 import { aiService } from "@/lib/ai/service";
 import { checkAiRateLimit } from "@/lib/rate-limit";
-import { getSessionFromRequest } from "@/lib/firebase-session";
-import { adminDb } from "@/lib/firebase/admin";
-import { canUseFeature, remainingFreeUses, currentMonthKey, vipMonthlyCapReached, FEATURE_LIMITS, type FeatureLimit } from "@/lib/features";
-import { computeVipAccess } from "@/lib/vip-access";
+import { checkFeatureGate, recordFeatureUse } from "@/lib/feature-gate";
 import { CABINET_CATEGORIES } from "@/lib/data";
 
 export const runtime = "nodejs";
@@ -52,11 +48,6 @@ const SCAN_PROMPT = `أنتِ خبيرة تصنيف منتجات تجميل وع
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSessionFromRequest(req);
-    if (!session) {
-      return NextResponse.json({ error: "يجب تسجيل الدخول لاستخدام هذه الميزة" }, { status: 401 });
-    }
-
     if (await checkAiRateLimit(req, "cabinet-scan", { max: 6, windowMs: 10 * 60 * 1000 })) {
       return NextResponse.json(
         { error: "طلبات كثيرة جدًا، حاولي مرة أخرى بعد قليل" },
@@ -70,52 +61,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "صورة غير صالحة" }, { status: 400 });
     }
 
-    // Server-side entitlement check — the only one that counts. A client
-    // check exists too (cabinet-scan-screen.tsx) purely for UX (showing the
-    // VIP prompt before the person even tries), but this is what actually
-    // enforces the limit.
-    const userRef = adminDb.collection("users").doc(session.uid);
-    const userSnap = await userRef.get();
-    if (!userSnap.exists) {
-      return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
-    }
-    const user = userSnap.data()!;
-    const settingsSnap = await adminDb.collection("settings").doc("general").get();
-    const configured = settingsSnap.data()?.aiLimits?.[FEATURE_ID] as Partial<FeatureLimit> | undefined;
-    const defaults = FEATURE_LIMITS[FEATURE_ID];
-    const limit: FeatureLimit = {
-      freeUses: Number.isInteger(configured?.freeUses) && configured!.freeUses! >= 0 ? configured!.freeUses! : defaults.freeUses,
-      vipMonthlyCap: Number.isInteger(configured?.vipMonthlyCap) && configured!.vipMonthlyCap! >= 0 ? configured!.vipMonthlyCap! : defaults.vipMonthlyCap,
-    };
-    // Effective VIP access = billing OR active referral trial — see
-    // src/lib/vip-access.ts / src/lib/feature-gate.ts.
-    const isPremium = computeVipAccess(user.isPremium, user.subscriptionExpiresAt, user.vipTrialExpiresAt);
-    const usageCount = (user.featureUsage?.[FEATURE_ID] as number | undefined) || 0;
-
-    if (!canUseFeature(FEATURE_ID, isPremium, usageCount, limit)) {
-      return NextResponse.json(
-        {
-          error: "استخدمتِ تجربتكِ المجانية لمسح الخزانة بالذكاء الاصطناعي. رقّي لـ VIP لاستخدامها مجددًا.",
-          upgradeRequired: true,
-        },
-        { status: 403 }
-      );
-    }
-
-    // VIP "unlimited" is a soft monthly cap, not literally infinite — see
-    // the doc comment on FEATURE_LIMITS in features.ts.
-    const monthKey = currentMonthKey();
-    const monthlyCountBefore =
-      (user.featureUsageMonthly?.[FEATURE_ID]?.[monthKey] as number | undefined) || 0;
-    if (isPremium && vipMonthlyCapReached(FEATURE_ID, monthlyCountBefore, limit)) {
-      return NextResponse.json(
-        {
-          error: "وصلتِ للحد الشهري لهذه الميزة ضمن VIP. سيُعاد الحد تلقائيًا مطلع الشهر القادم.",
-          monthlyLimitReached: true,
-        },
-        { status: 429 }
-      );
-    }
+    const gate = await checkFeatureGate(req, FEATURE_ID);
+    if (!gate.ok) return gate.response;
 
     const parsed = await aiService.visionJson<ScanResult>(SCAN_PROMPT, [image]);
 
@@ -139,25 +86,17 @@ export async function POST(req: NextRequest) {
         };
       });
 
-    // Usage is recorded on every successful scan, premium included — cheap
-    // to track, useful later (e.g. deciding the free-tier limit itself),
-    // and canUseFeature() already bypasses the free-trial cap for premium
-    // (the separate vipMonthlyCap check above is what bounds VIP usage).
-    const usageUpdate: Record<string, FirebaseFirestore.FieldValue> = {
-      [`featureUsage.${FEATURE_ID}`]: FieldValue.increment(1),
-    };
-    if (isPremium) {
-      usageUpdate[`featureUsageMonthly.${FEATURE_ID}.${monthKey}`] = FieldValue.increment(1);
-    }
-    await userRef.set(usageUpdate, { merge: true });
+    const usage = await recordFeatureUse(
+      gate.userRef,
+      FEATURE_ID,
+      gate.usageCount,
+      gate.isPremium,
+      gate.limit
+    );
 
     return NextResponse.json({
       items,
-      usage: {
-        isPremium,
-        used: usageCount + 1,
-        remainingFree: remainingFreeUses(FEATURE_ID, usageCount + 1, limit),
-      },
+      usage,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "خطأ غير معروف";

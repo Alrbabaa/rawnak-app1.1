@@ -4,28 +4,16 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getSessionFromRequest } from "@/lib/firebase-session";
 import {
   canUseFeature,
-  remainingFreeUses,
-  currentMonthKey,
-  vipMonthlyCapReached,
+  defaultPeriodDays,
   FEATURE_LIMITS,
-  type FeatureLimit,
+  remainingFreeUses,
+  usageWindow,
   type FeatureId,
+  type FeatureLimit,
 } from "@/lib/features";
 import { computeVipAccess } from "@/lib/vip-access";
 
-/**
- * Shared "requires login + VIP-or-free-trial" check for AI feature routes.
- * Mirrors the reference implementation in /api/cabinet/scan/route.ts —
- * pulled out into one place so every AI route enforces the same rule the
- * same way, instead of five near-identical copies drifting apart over time.
- *
- * Usage in a route handler, after the rate-limit check and before doing the
- * expensive AI call:
- *   const gate = await checkFeatureGate(req, "skinAnalysis");
- *   if (!gate.ok) return gate.response;
- *   ... do the AI work ...
- *   await recordFeatureUse(gate.userRef, "skinAnalysis");
- */
+/** Server-side usage gate shared by every AI route. */
 export async function checkFeatureGate(
   req: NextRequest,
   featureId: FeatureId
@@ -35,10 +23,7 @@ export async function checkFeatureGate(
 > {
   const session = await getSessionFromRequest(req);
   if (!session) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "يجب تسجيل الدخول لاستخدام هذه الميزة" }, { status: 401 }),
-    };
+    return { ok: false, response: NextResponse.json({ error: "يجب تسجيل الدخول لاستخدام هذه الميزة" }, { status: 401 }) };
   }
 
   const userRef = adminDb.collection("users").doc(session.uid);
@@ -47,65 +32,41 @@ export async function checkFeatureGate(
     adminDb.collection("settings").doc("general").get(),
   ]);
   if (!userSnap.exists) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 }),
-    };
+    return { ok: false, response: NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 }) };
   }
 
   const user = userSnap.data()!;
-  // Effective VIP access = real billing (isPremium) OR an active referral
-  // trial (vipTrialExpiresAt) — see src/lib/vip-access.ts. Everything
-  // below this line (and everywhere this gate's `isPremium` is echoed back
-  // to the client) means "does she have VIP access right now", not
-  // strictly "is she a paying subscriber".
   const isPremium = computeVipAccess(user.isPremium, user.subscriptionExpiresAt, user.vipTrialExpiresAt);
-  const usageCount = (user.featureUsage?.[featureId] as number | undefined) || 0;
   const configured = settingsSnap.data()?.aiLimits?.[featureId] as Partial<FeatureLimit> | undefined;
   const defaults = FEATURE_LIMITS[featureId];
   const limit: FeatureLimit = {
     freeUses: Number.isInteger(configured?.freeUses) && configured!.freeUses! >= 0 ? configured!.freeUses! : defaults.freeUses,
     vipMonthlyCap: Number.isInteger(configured?.vipMonthlyCap) && configured!.vipMonthlyCap! >= 0 ? configured!.vipMonthlyCap! : defaults.vipMonthlyCap,
+    normalPeriodDays: Number.isInteger(configured?.normalPeriodDays) && configured!.normalPeriodDays! > 0 ? configured!.normalPeriodDays! : defaultPeriodDays(featureId, false),
+    vipPeriodDays: Number.isInteger(configured?.vipPeriodDays) && configured!.vipPeriodDays! > 0 ? configured!.vipPeriodDays! : defaultPeriodDays(featureId, true),
   };
 
+  const tier = isPremium ? "vip" : "normal";
+  const window = usageWindow(isPremium ? limit.vipPeriodDays : limit.normalPeriodDays);
+  const usageCount = (user.featureUsageWindows?.[tier]?.[featureId]?.[window.key] as number | undefined) || 0;
+
   if (!canUseFeature(featureId, isPremium, usageCount, limit)) {
+    const periodDays = isPremium ? limit.vipPeriodDays : limit.normalPeriodDays;
     return {
       ok: false,
-      response: NextResponse.json(
-        {
-          error: "استخدمتِ تجربتكِ المجانية لهذه الميزة. رقّي لـ VIP لاستخدامها بلا حدود.",
-          upgradeRequired: true,
-        },
-        { status: 403 }
-      ),
+      response: NextResponse.json({
+        error: `وصلتِ إلى الحد المتاح لهذه الميزة. سيُعاد ضبطه تلقائيًا كل ${periodDays} ${periodDays === 1 ? "يوم" : "أيام"}.`,
+        upgradeRequired: !isPremium,
+        limitReached: true,
+        resetAt: window.resetAt,
+      }, { status: 429 }),
     };
-  }
-
-  // VIP "unlimited" is a soft monthly cap, not literally infinite — see
-  // the doc comment on FEATURE_LIMITS in features.ts for why. Sized to
-  // never affect a normal user; free-trial users never reach this check.
-  if (isPremium) {
-    const monthKey = currentMonthKey();
-    const monthlyCount =
-      (user.featureUsageMonthly?.[featureId]?.[monthKey] as number | undefined) || 0;
-    if (vipMonthlyCapReached(featureId, monthlyCount, limit)) {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          {
-            error: "وصلتِ للحد الشهري لهذه الميزة ضمن VIP. سيُعاد الحد تلقائيًا مطلع الشهر القادم.",
-            monthlyLimitReached: true,
-          },
-          { status: 429 }
-        ),
-      };
-    }
   }
 
   return { ok: true, uid: session.uid, userRef, isPremium, usageCount, limit };
 }
 
-/** Call after a successful AI call. Returns usage info for the response payload. */
+/** Records a successful call in the current tier-specific time window. */
 export async function recordFeatureUse(
   userRef: FirebaseFirestore.DocumentReference,
   featureId: FeatureId,
@@ -113,18 +74,23 @@ export async function recordFeatureUse(
   isPremium: boolean,
   limit?: FeatureLimit
 ) {
-  const update: Record<string, FirebaseFirestore.FieldValue> = {
-    [`featureUsage.${featureId}`]: FieldValue.increment(1),
-  };
-  // Only VIP/trial users need the monthly counter — free-trial users are
-  // already bounded by the lifetime featureUsage count above.
-  if (isPremium) {
-    update[`featureUsageMonthly.${featureId}.${currentMonthKey()}`] = FieldValue.increment(1);
-  }
-  await userRef.set(update, { merge: true });
+  const periodDays = isPremium
+    ? (limit?.vipPeriodDays ?? defaultPeriodDays(featureId, true))
+    : (limit?.normalPeriodDays ?? defaultPeriodDays(featureId, false));
+  const window = usageWindow(periodDays);
+  const tier = isPremium ? "vip" : "normal";
+
+  await userRef.set(
+    { [`featureUsageWindows.${tier}.${featureId}.${window.key}`]: FieldValue.increment(1) },
+    { merge: true }
+  );
+
   return {
     isPremium,
     used: usageCountBefore + 1,
-    remainingFree: remainingFreeUses(featureId, usageCountBefore + 1, limit),
+    remainingFree: isPremium
+      ? Math.max(0, (limit?.vipMonthlyCap ?? FEATURE_LIMITS[featureId].vipMonthlyCap) - usageCountBefore - 1)
+      : remainingFreeUses(featureId, usageCountBefore + 1, limit),
+    resetAt: window.resetAt,
   };
 }

@@ -40,22 +40,33 @@ export const FEATURE_LIMITS = {
 } as const;
 
 export type FeatureId = keyof typeof FEATURE_LIMITS;
-export interface FeatureLimit { freeUses: number; vipMonthlyCap: number; }
+export interface FeatureLimit {
+  freeUses: number;
+  vipMonthlyCap: number;
+  normalPeriodDays: number;
+  vipPeriodDays: number;
+}
+
+export function defaultPeriodDays(featureId: FeatureId, isPremium: boolean): number {
+  if (featureId === "aiChat") return 2;
+  return isPremium ? 7 : 3;
+}
 
 export function defaultAiLimits(): Record<FeatureId, FeatureLimit> {
   return Object.fromEntries(
     Object.entries(FEATURE_LIMITS).map(([id, limit]) => [id, {
       freeUses: limit.freeUses,
       vipMonthlyCap: limit.vipMonthlyCap,
+      normalPeriodDays: defaultPeriodDays(id as FeatureId, false),
+      vipPeriodDays: defaultPeriodDays(id as FeatureId, true),
     }])
   ) as Record<FeatureId, FeatureLimit>;
 }
 
 export function canUseFeature(featureId: FeatureId, isPremium: boolean, usageCount: number, override?: FeatureLimit): boolean {
-  if (isPremium) return true;
   const limit = override || FEATURE_LIMITS[featureId];
   if (!limit) return true; // unknown id — fail open, this is a growth gate not a security boundary
-  return usageCount < limit.freeUses;
+  return usageCount < (isPremium ? limit.vipMonthlyCap : limit.freeUses);
 }
 
 export function remainingFreeUses(featureId: FeatureId, usageCount: number, override?: FeatureLimit): number {
@@ -70,6 +81,14 @@ export function remainingFreeUses(featureId: FeatureId, usageCount: number, over
 export function currentMonthKey(): string {
   const d = new Date();
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Fixed UTC usage window. A new key automatically resets the counter. */
+export function usageWindow(periodDays: number, now = Date.now()): { key: string; resetAt: number } {
+  const safeDays = Math.max(1, Math.floor(periodDays));
+  const windowMs = safeDays * 24 * 60 * 60 * 1000;
+  const index = Math.floor(now / windowMs);
+  return { key: `${safeDays}d-${index}`, resetAt: (index + 1) * windowMs };
 }
 
 /** True when a VIP/trial user has hit this month's soft cap. Free-trial

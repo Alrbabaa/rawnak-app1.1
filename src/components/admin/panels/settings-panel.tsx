@@ -19,7 +19,7 @@ interface Settings {
   maintenanceMessage: string;
   announcementEnabled: boolean;
   announcementText: string;
-  aiLimits: Record<FeatureId, { freeUses: number; vipMonthlyCap: number }>;
+  aiLimits: Record<FeatureId, { freeUses: number; vipMonthlyCap: number; normalPeriodDays: number; vipPeriodDays: number }>;
 }
 
 interface SettingsPanelProps {
@@ -103,14 +103,14 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            حد الحساب العادي إجمالي لكل ميزة، وحد VIP شهري ويُعاد تلقائيًا بداية كل شهر. القيمة 0 توقف الميزة لهذه الفئة.
+            حد الاستخدام يُطبّق داخل الدورة المحددة لكل فئة. الافتراضي 3 أيام للعادي و7 أيام لـ VIP، والدردشة كل يومين. القيمة 0 توقف الميزة لهذه الفئة.
           </p>
           <div className="space-y-2">
             {(Object.keys(FEATURE_LIMITS) as FeatureId[]).map((featureId) => (
-              <div key={featureId} className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[1fr_130px_130px] sm:items-end">
+              <div key={featureId} className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[1fr_repeat(4,110px)] sm:items-end">
                 <p className="text-sm font-semibold">{FEATURE_LIMITS[featureId].label}</p>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">المستخدم العادي</Label>
+                  <Label className="text-[11px]">عدد العادي</Label>
                   <Input
                     type="number"
                     min={0}
@@ -128,7 +128,25 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">VIP شهريًا</Label>
+                  <Label className="text-[11px]">دورة العادي (أيام)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={settings.aiLimits[featureId].normalPeriodDays}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      aiLimits: {
+                        ...settings.aiLimits,
+                        [featureId]: { ...settings.aiLimits[featureId], normalPeriodDays: Number(e.target.value) },
+                      },
+                    })}
+                    disabled={!canEdit}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">عدد VIP</Label>
                   <Input
                     type="number"
                     min={0}
@@ -139,6 +157,24 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
                       aiLimits: {
                         ...settings.aiLimits,
                         [featureId]: { ...settings.aiLimits[featureId], vipMonthlyCap: Number(e.target.value) },
+                      },
+                    })}
+                    disabled={!canEdit}
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">دورة VIP (أيام)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={settings.aiLimits[featureId].vipPeriodDays}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      aiLimits: {
+                        ...settings.aiLimits,
+                        [featureId]: { ...settings.aiLimits[featureId], vipPeriodDays: Number(e.target.value) },
                       },
                     })}
                     disabled={!canEdit}
