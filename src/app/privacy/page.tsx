@@ -50,8 +50,8 @@ export default function PrivacyPolicyPage() {
             مجتمعية اختيارية. التطبيق من تطوير وملكية <strong>Artistic Minds</strong>.
           </p>
           <p>
-            للتواصل بخصوص الخصوصية: <strong dir="ltr">support@rawnak.app</strong> أو{" "}
-            <strong dir="ltr">contact@artisticminds.com</strong>.
+            للتواصل بخصوص الخصوصية: <strong dir="ltr">rawnakapp@gmail.com</strong> أو{" "}
+            <strong dir="ltr">artisticmindsa.r@gmail.com</strong>.
           </p>
         </Section>
 
@@ -130,7 +130,7 @@ export default function PrivacyPolicyPage() {
             <li>سحب موافقتك على أذونات الكاميرا/الموقع/الإشعارات في أي وقت من إعدادات جهازك.</li>
             <li>الاعتراض على معالجة معينة لبياناتك أو طلب تقييدها، بحسب القوانين المعمول بها في بلدك.</li>
           </ul>
-          <p>لممارسة أي من هذه الحقوق، راسلينا على <strong dir="ltr">support@rawnak.app</strong>.</p>
+          <p>لممارسة أي من هذه الحقوق، راسلينا على <strong dir="ltr">rawnakapp@gmail.com</strong>.</p>
         </Section>
 
         <Section title="٩. خصوصية القُصّر">
@@ -163,9 +163,9 @@ export default function PrivacyPolicyPage() {
           </p>
           <p dir="ltr" className="font-mono text-sm">
             Artistic Minds<br />
-            support@rawnak.app<br />
-            contact@artisticminds.com<br />
-            https://artisticminds.com
+            rawnakapp@gmail.com<br />
+            artisticmindsa.r@gmail.com<br />
+            https://artisticmindsa.com
           </p>
         </Section>
 

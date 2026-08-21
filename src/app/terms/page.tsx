@@ -173,9 +173,9 @@ export default function TermsPage() {
         <Section title="١٣. تواصلي معنا">
           <p dir="ltr" className="font-mono text-sm">
             Artistic Minds<br />
-            support@rawnak.app<br />
-            contact@artisticminds.com<br />
-            https://artisticminds.com
+            rawnakapp@gmail.com<br />
+            artisticmindsa.r@gmail.com<br />
+            https://artisticmindsa.com
           </p>
         </Section>
 
