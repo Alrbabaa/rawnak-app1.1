@@ -1,86 +1,79 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import { Check, Clock3, ExternalLink, Mail, ShieldCheck } from "lucide-react";
+import styles from "./delete-account.module.css";
+
+const DELETE_EMAIL = "rawnakapp@gmail.com";
+const EMAIL_SUBJECT = "طلب حذف حساب";
 
 export const metadata: Metadata = {
-  title: "حذف الحساب | رَونق",
-  description:
-    "طلب حذف حساب رَونق وبياناته نهائياً — عبر التطبيق مباشرة أو بالتواصل مع فريق الدعم.",
-  keywords: [
-    "حذف حساب رَونق",
-    "حذف بيانات رَونق",
-    "Rawnak delete account",
-    "Rawnak data deletion",
-  ],
+  title: "طلب حذف الحساب - تطبيق رونق",
+  description: "تعليمات طلب حذف حساب تطبيق رونق وجميع البيانات الشخصية المرتبطة به نهائيًا خلال 48 ساعة من التحقق من الطلب.",
+  alternates: { canonical: "/delete-account" },
 };
 
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex gap-3">
-      <div className="w-7 h-7 shrink-0 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-extrabold">
-        {n}
-      </div>
-      <div>
-        <p className="font-bold text-sm text-foreground mb-1">{title}</p>
-        <p className="text-sm text-foreground/70 leading-7">{children}</p>
-      </div>
-    </div>
-  );
-}
+const steps = [
+  { title: "أرسلي طلب الحذف", description: <>أرسلي رسالة إلكترونية إلى <bdi>{DELETE_EMAIL}</bdi>.</> },
+  { title: "اكتبي عنوان الرسالة", description: <>يجب أن يكون عنوان الرسالة: <strong>«{EMAIL_SUBJECT}»</strong>.</> },
+  { title: "أضيفي بريدكِ المسجّل", description: "اذكري داخل الرسالة عنوان البريد الإلكتروني الذي استخدمتِه للتسجيل في تطبيق رونق، حتى نتمكن من التحقق من ملكية الحساب." },
+];
 
 export default function DeleteAccountPage() {
+  const mailto = `mailto:${DELETE_EMAIL}?subject=${encodeURIComponent(EMAIL_SUBJECT)}`;
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="max-w-2xl mx-auto px-5 py-12 sm:px-8">
-        <header className="mb-8 border-b border-border pb-8">
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">حذف حسابكِ وبياناتكِ</h1>
-          <p className="text-sm text-foreground/60">تطبيق رَونق (Rawnak) — Artistic Minds</p>
+    <main className={styles.page} dir="rtl">
+      <div className={styles.glow} aria-hidden="true" />
+      <div className={styles.shell}>
+        <nav className={styles.brand} aria-label="رونق">
+          <Image src="/rawnak-icon.jpg" alt="شعار تطبيق رونق" width={48} height={48} className={styles.logo} priority />
+          <div><span className={styles.brandName}>رَونق</span><span className={styles.brandTag}>جمالكِ، بلمسة أذكى</span></div>
+        </nav>
+
+        <header className={styles.hero}>
+          <span className={styles.eyebrow}><ShieldCheck size={16} aria-hidden="true" />الخصوصية وحقوق المستخدم</span>
+          <h1>طلب حذف الحساب - تطبيق رونق</h1>
+          <p>يمكنكِ طلب حذف حسابكِ وجميع البيانات المرتبطة به نهائيًا باتباع الخطوات البسيطة أدناه.</p>
         </header>
 
-        <p className="text-[15px] leading-8 text-foreground/80 mb-8">
-          يمكنكِ حذف حسابكِ في رَونق وجميع البيانات المرتبطة به بشكل نهائي وغير قابل
-          للتراجع، بإحدى الطريقتين التاليتين.
-        </p>
-
-        <section className="mb-10 space-y-5 rounded-3xl border border-border bg-card p-5">
-          <h2 className="font-extrabold text-base">الطريقة الأولى: من داخل التطبيق (الأسرع)</h2>
-          <Step n={1} title="افتحي التطبيق وسجّلي الدخول">
-            من الشاشة الرئيسية اضغطي على أيقونة الملف الشخصي.
-          </Step>
-          <Step n={2} title="اذهبي إلى تبويب «الحساب»">
-            ضمن شاشة الملف الشخصي، اختاري تبويب «الحساب» من القائمة العلوية.
-          </Step>
-          <Step n={3} title="اضغطي «حذف الحساب نهائياً»">
-            ثم أكّدي الحذف عند ظهور رسالة التأكيد. سيتم حذف حسابكِ فور التأكيد.
-          </Step>
+        <section className={styles.card} aria-labelledby="steps-heading">
+          <div className={styles.sectionHeading}>
+            <div className={styles.headingIcon}><Mail size={21} aria-hidden="true" /></div>
+            <div><p className={styles.kicker}>خطوات الطلب</p><h2 id="steps-heading">كيفية طلب حذف حسابكِ</h2></div>
+          </div>
+          <ol className={styles.steps}>
+            {steps.map((step, index) => (
+              <li key={step.title} className={styles.step}>
+                <span className={styles.stepNumber}>{index + 1}</span>
+                <div><h3>{step.title}</h3><p>{step.description}</p></div>
+              </li>
+            ))}
+          </ol>
+          <a className={styles.emailButton} href={mailto}><Mail size={19} aria-hidden="true" />إرسال طلب حذف الحساب</a>
+          <p className={styles.emailNote}>البريد المخصص للطلب: <bdi>{DELETE_EMAIL}</bdi></p>
         </section>
 
-        <section className="mb-10 space-y-3 rounded-3xl border border-border bg-card p-5">
-          <h2 className="font-extrabold text-base">الطريقة الثانية: طلب الحذف عبر البريد الإلكتروني</h2>
-          <p className="text-sm text-foreground/70 leading-7">
-            إن تعذّر عليكِ الوصول إلى التطبيق، أرسلي رسالة من عنوان البريد الإلكتروني
-            المسجَّل في حسابكِ إلى{" "}
-            <strong dir="ltr">support@rawnak.app</strong> بعنوان «طلب حذف حساب»،
-            وسنقوم بحذف حسابكِ وبياناتكِ خلال 14 يوم عمل على الأكثر، ثم نُرسل لكِ
-            تأكيداً بذلك.
-          </p>
+        <section className={`${styles.card} ${styles.privacyCard}`} aria-labelledby="privacy-heading">
+          <div className={styles.privacyIcon}><ShieldCheck size={27} aria-hidden="true" /></div>
+          <div>
+            <p className={styles.kicker}>التزامنا بخصوصيتكِ</p>
+            <h2 id="privacy-heading">حذف نهائي وآمن للبيانات</h2>
+            <p>بعد التحقق من صحة الطلب وملكية الحساب، سيتم حذف جميع بياناتكِ الشخصية ومعلومات ملفكِ الشخصي وكافة البيانات المرتبطة بحسابكِ نهائيًا من خوادمنا خلال <strong>48 ساعة</strong>. لا يمكن استعادة الحساب أو البيانات بعد إتمام الحذف.</p>
+            <div className={styles.promise}>
+              <span><Check size={16} /> البيانات الشخصية</span><span><Check size={16} /> معلومات الملف الشخصي</span><span><Check size={16} /> البيانات المرتبطة بالحساب</span>
+            </div>
+          </div>
+          <div className={styles.timeBadge}><Clock3 size={20} aria-hidden="true" /><span><strong>48</strong> ساعة</span></div>
         </section>
 
-        <section className="mb-4">
-          <h2 className="font-extrabold text-base mb-3">ما الذي يتم حذفه؟</h2>
-          <ul className="list-disc pr-5 space-y-2 text-sm leading-7 text-foreground/80">
-            <li>بيانات الحساب (الاسم، البريد الإلكتروني، الفئة العمرية).</li>
-            <li>صور ونتائج تحليل البشرة، وصور مسح المنتجات.</li>
-            <li>روتين العناية، سلاسل الإنجاز، والشارات.</li>
-            <li>الاتصالات الاجتماعية (المتابعون، رفيقة التوهج/Buddy، الملف العام).</li>
-            <li>سجل المحادثة مع المساعد الذكي.</li>
-            <li>رموز الإشعارات المرتبطة بجهازكِ.</li>
-          </ul>
-          <p className="text-xs text-foreground/50 mt-4 leading-6">
-            يُستثنى من الحذف ما قد يلزم الاحتفاظ به بموجب القانون (مثل سجلات
-            المعاملات المالية لأغراض محاسبية أو ضريبية)، وأي اشتراك نشط عبر متجر
-            Apple أو Google — يجب إلغاؤه بشكل منفصل من إعدادات حساب المتجر الخاص
-            بكِ، لأن رَونق لا يتحكم بمدفوعات المتجر مباشرة.
-          </p>
-        </section>
+        <footer className={styles.footer}>
+          <p>هل تحتاجين إلى مساعدة؟ تواصلي معنا</p>
+          <div className={styles.contactLinks}>
+            <a href={`mailto:${DELETE_EMAIL}`}><bdi>{DELETE_EMAIL}</bdi></a><span aria-hidden="true">•</span>
+            <a href="mailto:artisticmindsa.r@gmail.com"><bdi>artisticmindsa.r@gmail.com</bdi></a><span aria-hidden="true">•</span>
+            <a href="https://artisticmindsa.com" target="_blank" rel="noreferrer"><bdi>artisticmindsa.com</bdi> <ExternalLink size={13} aria-hidden="true" /></a>
+          </div>
+          <small>© 2026 رونق — Artistic Minds. جميع الحقوق محفوظة.</small>
+        </footer>
       </div>
     </main>
   );
