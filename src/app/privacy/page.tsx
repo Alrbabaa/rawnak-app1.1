@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "سياسة الخصوصية | رَونق",
@@ -30,6 +31,14 @@ export default function PrivacyPolicyPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto px-5 py-12 sm:px-8">
+        <Link
+          href="/"
+          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-muted"
+        >
+          <span aria-hidden="true">→</span>
+          العودة إلى التطبيق
+        </Link>
+
         <header className="mb-10 border-b border-border pb-8">
           <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">سياسة الخصوصية</h1>
           <p className="text-sm text-foreground/60">تطبيق رَونق (Rawnak) — منتج من Artistic Minds</p>
