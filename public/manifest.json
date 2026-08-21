@@ -12,22 +12,22 @@
   "categories": ["beauty", "health", "lifestyle"],
   "icons": [
     {
-      "src": "/rawnak-icon.jpg",
+      "src": "/icons/rawnak-192x192.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/rawnak-logo.jpg",
+      "src": "/icons/rawnak-512x512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/rawnak-logo.jpg",
-      "sizes": "1024x1024",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "src": "/icons/rawnak-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
