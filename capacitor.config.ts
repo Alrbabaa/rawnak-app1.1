@@ -8,14 +8,9 @@ import { KeyboardResize } from "@capacitor/keyboard";
  * cannot run inside the Android WebView. Capacitor here wraps your LIVE,
  * hosted HTTPS deployment — it does not bundle the app to run offline.
  *
- * Before building the APK:
- *   1. Deploy this Next.js app to a real host (Vercel, your own server, etc.)
- *      with a real domain and valid HTTPS certificate.
- *   2. Replace `server.url` below with that domain.
- *   3. Re-run `npx cap sync android`.
- *
- * Until step 2 is done, the app will try to load the placeholder URL and
- * show a blank/error screen — that's expected, not a bug.
+ * The native shell loads the production Next.js deployment inside
+ * Capacitor's BridgeActivity WebView. Keep this URL in sync with the
+ * verified production App Link host before every Play build.
  */
 const config: CapacitorConfig = {
   appId: "com.artisticminds.rawnak",
@@ -23,14 +18,12 @@ const config: CapacitorConfig = {
   webDir: "public", // unused while server.url is set, but required by the CLI schema
 
   server: {
-    // 🔴 REPLACE with your real production domain once hosted, e.g.:
-    // url: "https://rawnak.app",
-    url: "https://REPLACE-WITH-YOUR-DOMAIN.example.com",
+    url: "https://www.rawnakapp.com",
     androidScheme: "https",
     // Set to true ONLY during local development against `npm run dev` on
     // your own machine (cleartext HTTP on your LAN) — must be false/removed
     // for the production build you submit to Google Play.
-    allowNavigation: [],
+    allowNavigation: ["www.rawnakapp.com", "rawnakapp.com"],
   },
 
   android: {

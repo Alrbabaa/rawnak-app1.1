@@ -106,12 +106,14 @@ const COMPARISON = [
 export function VipScreen() {
   const setView = useAppStore((s) => s.setView);
   const goBack = useAppStore((s) => s.goBack);
-  const profile = useAppStore((s) => s.profile);
-  const updateProfile = useAppStore((s) => s.updateProfile);
   const { isNative, offering, loading, error, isPremiumActive, fetchOfferings, purchase, restore } =
     useSubscription();
 
   const [activePreview, setActivePreview] = useState<string>("forecast");
+  // Presentation-only state. It deliberately lives inside this screen,
+  // disappears on unmount, and never touches the persisted profile,
+  // Firebase, or RevenueCat entitlement state.
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   useEffect(() => {
     if (isNative) fetchOfferings();
@@ -133,17 +135,17 @@ export function VipScreen() {
           رجوع
         </button>
 
-        {/* Web demo toggle for review / presentation */}
+        {/* Isolated web-only presentation toggle. */}
         {!isNative && (
           <button
             onClick={() => {
-              const nextState = !profile.isPremium;
-              updateProfile({ isPremium: nextState });
+              const nextState = !isPreviewMode;
+              setIsPreviewMode(nextState);
               toast.success(nextState ? "تم تفعيل تجربة VIP العرض ✦" : "تمت العودة للنسخة المجانية");
             }}
             className="text-xs px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-medium"
           >
-            {profile.isPremium ? "إلغاء وضع تجربة VIP" : "تجربة VIP (معاينة)"}
+            {isPreviewMode ? "إنهاء معاينة VIP" : "تجربة VIP (معاينة)"}
           </button>
         )}
       </div>
@@ -172,7 +174,7 @@ export function VipScreen() {
       </motion.div>
 
       {/* VIP Active Status */}
-      {(isPremiumActive || profile.isPremium) && (
+      {isPremiumActive && (
         <Card className="p-5 rounded-2xl border-primary/30 bg-primary/10 text-center space-y-1">
           <div className="inline-flex p-2 rounded-full bg-primary/20 text-primary mb-1">
             <Check className="w-5 h-5" />
@@ -180,6 +182,15 @@ export function VipScreen() {
           <p className="font-bold text-base">عضويتكِ في VIP فعّالة الآن ✦</p>
           <p className="text-xs text-muted-foreground">
             تتمتعين بجميع مزايا التحليل المتقدم والاستشارات الحصرية
+          </p>
+        </Card>
+      )}
+
+      {isPreviewMode && !isPremiumActive && (
+        <Card className="p-4 rounded-2xl border-dashed border-primary/40 bg-primary/5 text-center">
+          <p className="font-bold text-sm">أنتِ الآن داخل معاينة VIP المؤقتة</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            هذه المعاينة بصرية داخل هذه الشاشة فقط ولا تمنح أي صلاحية مدفوعة.
           </p>
         </Card>
       )}
@@ -326,7 +337,7 @@ export function VipScreen() {
       </div>
 
       {/* RevenueCat Native Subscription Packages or Fallback */}
-      {!isNative && !isPremiumActive && !profile.isPremium && (
+      {!isNative && !isPremiumActive && (
         <Card className="p-5 rounded-2xl border-border text-center space-y-2 bg-card">
           <Smartphone className="w-8 h-8 mx-auto text-muted-foreground/60 mb-1" />
           <p className="text-sm font-bold">الاشتراك المباشر متاح عبر تطبيق الجوال</p>
@@ -335,7 +346,7 @@ export function VipScreen() {
           </p>
           <Button
             onClick={() => {
-              updateProfile({ isPremium: true });
+              setIsPreviewMode(true);
               toast.success("تم تفعيل وضع المعاينة VIP بنجاح ✦");
             }}
             className="mt-2 rounded-xl rawnak-rosegold-gradient text-black font-bold text-xs"
@@ -361,7 +372,7 @@ export function VipScreen() {
         </Card>
       )}
 
-      {isNative && offering && !isPremiumActive && !profile.isPremium && (
+      {isNative && offering && !isPremiumActive && (
         <div className="space-y-3">
           <p className="text-xs font-bold text-muted-foreground px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
@@ -413,4 +424,3 @@ export function VipScreen() {
     </div>
   );
 }
-

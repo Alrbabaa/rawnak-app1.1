@@ -1030,10 +1030,10 @@ export function ProfileScreen() {
                       {hasVipAccess ? "عضوية VIP فعّالة ✦" : "الترقية إلى رَونق VIP"}
                     </p>
                     <p className="text-xs text-black/80 font-medium">
-                      {profile.isPremium
-                        ? "إدارة الاشتراك وتفاصيل المزايا"
-                        : vipTrialDaysLeft > 0
-                          ? `تجربة VIP من الدعوات — متبقٍ ${vipTrialDaysLeft} ${vipTrialDaysLeft === 1 ? "يوم" : "أيام"}`
+                      {vipTrialDaysLeft > 0
+                        ? `تجربة VIP من الدعوات — متبقٍ ${vipTrialDaysLeft} ${vipTrialDaysLeft === 1 ? "يوم" : "أيام"}`
+                        : hasVipAccess
+                          ? "إدارة الاشتراك وتفاصيل المزايا"
                           : "تجربة خبيرة ذكية بلا حدود"}
                     </p>
                   </div>
@@ -1270,4 +1270,3 @@ function ExploreCard({
     </Card>
   );
 }
-

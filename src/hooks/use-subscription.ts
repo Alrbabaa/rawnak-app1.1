@@ -5,7 +5,7 @@ import { Capacitor } from "@capacitor/core";
 import { Purchases, LOG_LEVEL, PURCHASES_ERROR_CODE, type PurchasesOffering } from "@revenuecat/purchases-capacitor";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { useAppStore } from "@/lib/store";
-import { computeVipAccess } from "@/lib/vip-access";
+import { useVipAccessStatus } from "@/hooks/use-vip-access";
 
 /**
  * RevenueCat client-side integration — NATIVE ONLY (iOS/Android via
@@ -44,7 +44,6 @@ let sdkConfigured = false; // true once Purchases.configure() has run this proce
 let identifiedUid: string | null = null; // whichever Firebase uid RevenueCat is CURRENTLY logged in as; null = anonymous
 
 export function useSubscription() {
-  const profile = useAppStore((s) => s.profile);
   const isAuthed = useAppStore((s) => s.isAuthed);
   const isGuest = useAppStore((s) => s.isGuest);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
@@ -54,6 +53,7 @@ export function useSubscription() {
   // below can gate correctly without needing identifiedUid itself as a hook
   // dependency (it's a plain module variable, not tracked by React).
   const [ready, setReady] = useState(identifiedUid !== null);
+  const vipAccessStatus = useVipAccessStatus();
 
   const isNative = Capacitor.isNativePlatform();
 
@@ -161,11 +161,7 @@ export function useSubscription() {
   // (vipTrialExpiresAt, referral trial). Never derived from the client
   // purchase response above. Includes the referral VIP trial, not just
   // real billing — see src/lib/vip-access.ts.
-  const isPremiumActive = computeVipAccess(
-    profile.isPremium,
-    profile.subscriptionExpiresAt,
-    profile.vipTrialExpiresAt
-  );
+  const isPremiumActive = vipAccessStatus === "vip";
 
-  return { isNative, offering, loading, error, isPremiumActive, fetchOfferings, purchase, restore };
+  return { isNative, offering, loading, error, isPremiumActive, vipAccessStatus, fetchOfferings, purchase, restore };
 }

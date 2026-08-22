@@ -18,8 +18,28 @@ import { computeVipAccess, vipTrialDaysRemaining } from "@/lib/vip-access";
  * the same rule.
  */
 export function useHasVipAccess(): boolean {
+  return useVipAccessStatus() === "vip";
+}
+
+export type VipAccessStatus = "unknown" | "vip" | "normal";
+
+/**
+ * Tri-state subscription resolution. Authenticated users remain unknown
+ * until Firestore has supplied entitlement fields for their exact uid.
+ * Unknown is fail-closed: callers never receive VIP access from it.
+ */
+export function useVipAccessStatus(): VipAccessStatus {
   const profile = useAppStore((s) => s.profile);
-  return computeVipAccess(profile.isPremium, profile.subscriptionExpiresAt, profile.vipTrialExpiresAt);
+  const isAuthed = useAppStore((s) => s.isAuthed);
+  const isGuest = useAppStore((s) => s.isGuest);
+  const authUid = useAppStore((s) => s.authUid);
+  const resolvedUid = useAppStore((s) => s.subscriptionResolvedUid);
+
+  if (!isAuthed || isGuest) return "normal";
+  if (!authUid || resolvedUid !== authUid) return "unknown";
+  return computeVipAccess(profile.isPremium, profile.subscriptionExpiresAt, profile.vipTrialExpiresAt)
+    ? "vip"
+    : "normal";
 }
 
 /** Days left on an active referral VIP trial (0 if none/expired/on real billing). */

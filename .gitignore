@@ -54,3 +54,6 @@ server.log
 /skills/
 worklog.md
 /upload/
+/.gradle-cache/
+/.tools/
+/.android-home/

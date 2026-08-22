@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Safe fallback for configurations not covered by the generated
+         portrait/landscape density-specific splash bitmaps. -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#1A1015" />
+        </shape>
+    </item>
+</layer-list>

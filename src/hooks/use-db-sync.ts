@@ -16,6 +16,7 @@ import { restoreRemoteGamificationData } from "@/lib/firebase/gamification-servi
 export function useDbSync() {
   const isAuthed = useAppStore((s) => s.isAuthed);
   const isGuest = useAppStore((s) => s.isGuest);
+  const authUid = useAppStore((s) => s.authUid);
   const hasOnboarded = useAppStore((s) => s.hasOnboarded);
   const profile = useAppStore((s) => s.profile);
   const analyses = useAppStore((s) => s.analyses);
@@ -36,6 +37,14 @@ export function useDbSync() {
 
   const loadedRef = useRef(false);
   const email = profile.email;
+
+  // The hook stays mounted while accounts can change on the same device.
+  // Reset both the load guard and the entitlement-resolution marker for
+  // every identity transition so User B can never inherit User A's state.
+  useEffect(() => {
+    loadedRef.current = false;
+    useAppStore.setState({ subscriptionResolvedUid: null });
+  }, [authUid]);
 
   // Load persisted data once when authed
   useEffect(() => {
@@ -130,6 +139,7 @@ export function useDbSync() {
         updateProfile({
           vipTrialExpiresAt: serverProfile.vipTrialExpiresAt ?? null,
         });
+        useAppStore.setState({ subscriptionResolvedUid: authUid });
 
         // Account tier badge (standard/active/featured/vip/influencer/
         // business) — same always-trust-server rule: it's only ever
@@ -244,7 +254,7 @@ export function useDbSync() {
         // Silent — offline-first, will sync later
       }
     })();
-  }, [isAuthed, isGuest, email]);
+  }, [isAuthed, isGuest, email, authUid]);
 
   // Debounced auto-sync on data changes
   useEffect(() => {

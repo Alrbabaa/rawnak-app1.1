@@ -486,6 +486,10 @@ interface AppState {
   // cleanly). Persisted (see partialize) specifically so it survives a
   // reload — see syncFirebaseUser's doc comment for why this exists.
   authUid: string | null;
+  // Transient marker proving subscription fields were fetched from the
+  // server for this exact Firebase user. Never persisted: a reload or
+  // account switch must return VIP resolution to "unknown" until sync.
+  subscriptionResolvedUid: string | null;
   // From the verified ID token's custom claims (see syncFirebaseUser),
   // never from Firestore or anywhere else — matches the security model
   // already used by /admin and every admin API route. Deliberately NOT in
@@ -756,6 +760,7 @@ function resetUserDataState(): Partial<AppState> {
   return {
     hasOnboarded: false,
     role: null,
+    subscriptionResolvedUid: null,
     profile: EMPTY_PROFILE,
     colorTheme: "rose",
     chatMessages: [],
@@ -814,6 +819,7 @@ export const useAppStore = create<AppState>()(
       hasOnboarded: false,
       isGuest: false,
       authUid: null,
+      subscriptionResolvedUid: null,
       role: null,
 
       signup: async (email, password, name, referralCode) => {

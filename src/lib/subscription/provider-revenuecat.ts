@@ -96,13 +96,18 @@ export function createRevenueCatProvider(): SubscriptionProvider {
       const expiresAt = e.expiration_at_ms ?? null;
       const nowMs = e.event_timestamp_ms || Date.now();
       const entitlementIds = e.entitlement_ids || (e.entitlement_id ? [e.entitlement_id] : []);
+      const expectedEntitlementId = process.env.REVENUECAT_VIP_ENTITLEMENT_ID;
+      // A purchase event alone is not a VIP grant. It must carry a real
+      // RevenueCat entitlement, optionally pinned to the configured VIP id.
+      const hasVipEntitlement = entitlementIds.length > 0 &&
+        (!expectedEntitlementId || entitlementIds.includes(expectedEntitlementId));
 
       return {
         uid: e.app_user_id,
         type,
         productId: e.product_id,
         entitlementIds,
-        isActive: computeIsActive(type, expiresAt, nowMs),
+        isActive: hasVipEntitlement && computeIsActive(type, expiresAt, nowMs),
         expiresAt,
         priceInCents:
           typeof e.price_in_purchased_currency === "number"
