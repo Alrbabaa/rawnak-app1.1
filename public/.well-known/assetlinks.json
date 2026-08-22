@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.artisticminds.rawnak",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_YOUR_SHA256_CERT_FINGERPRINT"]
+      "sha256_cert_fingerprints": ["A8:87:68:20:A9:FD:26:E5:0E:71:07:D9:A4:53:BC:B9:88:AA:79:60:43:E9:A1:53:0B:21:FC:60:02:2C:72:36"]
     }
   }
 ]
