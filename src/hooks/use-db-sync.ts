@@ -266,6 +266,7 @@ export function useDbSync() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           analyses: analyses.map((a) => ({
+            id: a.id,
             overall: a.overall,
             metrics: a.metrics,
             skinType: a.skinType,

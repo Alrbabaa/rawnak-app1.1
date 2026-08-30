@@ -22,31 +22,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links: rawnak://open/chat, rawnak://referral/CODE, etc.
-                 (custom scheme, works today, no setup needed). -->
+            <!-- Capacitor custom-scheme deep links; no TWA/App Links/DAL. -->
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="rawnak" />
             </intent-filter>
-
-            <!-- App Links: lets Android hand a tapped https://rawnakapp.com/...
-                 link straight to this app (when installed) instead of the
-                 browser — e.g. referral links (?ref=CODE). Requires the
-                 matching /.well-known/assetlinks.json to be live on
-                 rawnakapp.com with the real signing-cert SHA256 fingerprint
-                 filled in (see that file). Until then, autoVerify simply
-                 fails silently and these links keep opening in the browser
-                 exactly as before — not a breaking change either way. -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="www.rawnakapp.com" />
-                <data android:scheme="https" android:host="rawnakapp.com" />
-            </intent-filter>
-
         </activity>
 
         <provider
@@ -56,23 +38,21 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"></meta-data>
+                android:resource="@xml/file_paths" />
         </provider>
     </application>
 
-    <!-- Permissions -->
-
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Camera: used for skin analysis + product scanning (getUserMedia in the WebView) -->
+    <!-- Camera is optional hardware, but available to the Capacitor WebView. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
-    <!-- Location: used for the real weather widget on the home screen -->
+    <!-- Used by the weather widget. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Local (on-device) daily routine reminder — opt-in, no push server involved -->
+    <!-- Android 13+ permission for local and push notification plugins. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

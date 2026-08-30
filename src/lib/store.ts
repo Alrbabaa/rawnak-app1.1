@@ -1086,7 +1086,17 @@ export const useAppStore = create<AppState>()(
         role: "user" | "admin" | "super_admin" | null
       ) => {
         if (!user) {
-          set({ isAuthed: false, authChecked: true, role: null });
+          // Firebase can invalidate/sign out a session independently of our
+          // explicit logout button. Clear every user-scoped value here too
+          // so stale VIP access or private data never survives sign-out.
+          set({
+            ...resetUserDataState(),
+            isAuthed: false,
+            authChecked: true,
+            isGuest: false,
+            authUid: null,
+            view: "auth",
+          });
           return;
         }
         const currentAuthUid = get().authUid;

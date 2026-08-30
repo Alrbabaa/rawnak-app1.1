@@ -17,6 +17,7 @@ import {
   Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AnalysisThumbnail } from "@/components/rawnak/analysis-thumbnail";
 
 export function TimelineScreen() {
   const { analyses, comparisons, streak, routine, setView, goBack } = useAppStore();
@@ -179,9 +180,8 @@ export function TimelineScreen() {
                     <span className="absolute -right-3.5 top-3 w-3 h-3 rounded-full bg-primary ring-4 ring-background" />
                     <Card className="p-3 rounded-2xl border-border mr-2">
                       <div className="flex items-start gap-3">
-                        <img
+                        <AnalysisThumbnail
                           src={a.imageData}
-                          alt="تحليل"
                           className="w-14 h-14 rounded-xl object-cover border border-border"
                         />
                         <div className="flex-1 min-w-0">

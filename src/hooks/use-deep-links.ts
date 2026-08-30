@@ -21,18 +21,14 @@ const DEEPLINK_VIEWS: View[] = [
 ];
 
 /**
- * Handles two deep link forms on both iOS and Android — no-op on web/PWA:
+ * Handles native deep links and is a no-op on web/PWA:
  *  - rawnak://open/<view> and rawnak://referral/<code> — custom scheme,
- *    registered in Info.plist / AndroidManifest.xml, works regardless of
- *    domain/publishing status.
- *  - https://rawnak.app/?ref=<code> — the actual link referralShareLink()
- *    generates and people share. Only arrives here (instead of opening in
- *    the system browser) once Universal Links / App Links are verified —
- *    see App.entitlements (iOS) and the second intent-filter in
- *    AndroidManifest.xml (Android), both of which need the real
- *    Team ID / SHA256 fingerprint filled in first. Until then, tapping
- *    that link just opens rawnak.app in the browser, which still works
- *    fine and credits the referral — see complete-signup's doc comment.
+ *    registered in Info.plist / AndroidManifest.xml. This is Android's
+ *    native route and needs no domain verification or Digital Asset Links.
+ *  - An https referral may still arrive from iOS Universal Links when that
+ *    platform's Associated Domains setup is active. On Android, shared
+ *    https links intentionally stay web links; referral credit still works
+ *    through the query parameter on the hosted Next.js app.
  */
 export function useDeepLinks() {
   const setView = useAppStore((s) => s.setView);
@@ -47,8 +43,8 @@ export function useDeepLinks() {
         const parsed = new URL(url);
 
         if (parsed.protocol === "https:") {
-          // Universal Link / App Link — same shape as referralShareLink():
-          // https://rawnak.app/?ref=CODE. Only the referral case is
+          // iOS Universal Link — same shape as referralShareLink(). Only
+          // the referral case is
           // handled here; any other rawnak.app path (e.g. /admin) simply
           // falls through and does nothing special, same as a normal
           // page load would.

@@ -25,8 +25,8 @@ export function useNativeStatusBar(theme: "light" | "dark") {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    // Style.Dark = light icons/text (for dark backgrounds).
-    // Style.Light = dark icons/text (for light backgrounds).
+    // Capacitor Android maps Style.Dark to a light foreground and
+    // Style.Light to dark status-bar icons.
     StatusBar.setStyle({ style: theme === "dark" ? Style.Dark : Style.Light }).catch(() => {});
     StatusBar.setBackgroundColor({ color: theme === "dark" ? BG.dark : BG.light }).catch(() => {});
   }, [theme]);

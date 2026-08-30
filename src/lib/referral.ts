@@ -54,5 +54,5 @@ export function referralShareLink(code: string): string {
   // first click). The Capacitor deep link (rawnak://referral/<code>) is a
   // separate, native-only path already handled in use-deep-links.ts for
   // people who already have the app.
-  return `https://rawnak.app/?ref=${code}`;
+  return `https://www.rawnakapp.com/?ref=${code}`;
 }

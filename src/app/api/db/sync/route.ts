@@ -78,18 +78,37 @@ export async function POST(req: NextRequest) {
 
     if (body.analyses && body.analyses.length > 0) {
       const analysesRef = userRef.collection("analyses");
-      const latestSnap = await analysesRef.orderBy("createdAt", "desc").limit(1).get();
-      const latestTs = latestSnap.empty ? 0 : (latestSnap.docs[0].data().createdAt as number);
-      const newOnes = body.analyses.filter((a) => a.ts > latestTs);
+      const existingSnap = await analysesRef.get();
+      const byId = new Map(existingSnap.docs.map((doc) => [doc.id, doc]));
+      const byTimestamp = new Map(
+        existingSnap.docs.map((doc) => [Number(doc.data().createdAt), doc])
+      );
+      let created = 0;
 
-      for (const a of newOnes) {
-        const docRef = analysesRef.doc();
-        let imageUrl = "";
-        try {
-          imageUrl = await uploadBase64Image(uid, "analyses", docRef.id, a.imageData);
-        } catch (e) {
-          console.error("[db/sync] image upload failed:", e instanceof Error ? e.message : e);
+      for (const a of body.analyses) {
+        // Keep the client id as the Firestore id. Timestamp matching also
+        // recognizes analyses written by older versions that generated a
+        // different server id, preventing duplicates during migration.
+        const existing = (a.id && byId.get(a.id)) || byTimestamp.get(a.ts);
+        const docRef = existing?.ref || (a.id ? analysesRef.doc(a.id) : analysesRef.doc());
+        const existingImageUrl = (existing?.data().imageUrl as string | undefined) || "";
+        let imageUrl = existingImageUrl;
+
+        if (!imageUrl && a.imageData?.startsWith("data:")) {
+          try {
+            imageUrl = await uploadBase64Image(uid, "analyses", docRef.id, a.imageData);
+          } catch (e) {
+            console.error("[db/sync] image upload failed:", e instanceof Error ? e.message : e);
+          }
         }
+
+        if (existing) {
+          if (imageUrl && imageUrl !== existingImageUrl) {
+            await docRef.update({ imageUrl });
+          }
+          continue;
+        }
+
         await docRef.set({
           overall: a.overall,
           hydration: a.metrics.hydration ?? 0,
@@ -109,8 +128,9 @@ export async function POST(req: NextRequest) {
           imageUrl,
           createdAt: a.ts,
         });
+        created += 1;
       }
-      results.analyses = newOnes.length;
+      results.analyses = created;
     }
 
     if (body.cabinet) {

@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">رَونق</string>
     <string name="title_activity_main">رَونق</string>
-    <string name="package_name">com.artisticminds.rawnak</string>
-    <string name="custom_url_scheme">com.artisticminds.rawnak</string>
+    <string name="package_name">com.rawnakapp.www.twa</string>
+    <string name="custom_url_scheme">com.rawnakapp.www.twa</string>
 </resources>

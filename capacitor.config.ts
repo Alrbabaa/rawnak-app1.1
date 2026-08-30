@@ -9,11 +9,12 @@ import { KeyboardResize } from "@capacitor/keyboard";
  * hosted HTTPS deployment — it does not bundle the app to run offline.
  *
  * The native shell loads the production Next.js deployment inside
- * Capacitor's BridgeActivity WebView. Keep this URL in sync with the
- * verified production App Link host before every Play build.
+ * Capacitor's BridgeActivity WebView. Android deep links use the custom
+ * `rawnak://` scheme and require no App Links or Digital Asset Links.
  */
 const config: CapacitorConfig = {
-  appId: "com.artisticminds.rawnak",
+  // Must remain identical to the package already registered in Google Play.
+  appId: "com.rawnakapp.www.twa",
   appName: "رَونق",
   webDir: "public", // unused while server.url is set, but required by the CLI schema
 
@@ -40,6 +41,7 @@ const config: CapacitorConfig = {
       androidScaleType: "CENTER_CROP",
     },
     StatusBar: {
+      // Capacitor's DARK style renders a light foreground on Android.
       style: "DARK",
       backgroundColor: "#1a1015",
     },

@@ -1,12 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { adminStorage } from "@/lib/firebase/admin";
 
 /**
  * Uploads a base64 data URL (what the client already produces via
  * canvas.toDataURL() for skin-analysis/cabinet photos) to Firebase Storage,
- * returns a public download URL.
- *
- * Deliberate simplification: files are made public-read rather than using
- * signed URLs. These are skincare/product photos, not sensitive documents.
+ * returns a stable tokenized Firebase download URL. The token lives in the
+ * object's metadata, so this URL does not expire and the user's photo does
+ * not need bucket-level public-read access.
  */
 export async function uploadBase64Image(
   uid: string,
@@ -23,12 +23,15 @@ export async function uploadBase64Image(
   const path = `users/${uid}/${folder}/${id}.${ext}`;
   const file = bucket.file(path);
 
+  const downloadToken = randomUUID();
   await file.save(Buffer.from(base64, "base64"), {
-    metadata: { contentType: mimeType },
+    metadata: {
+      contentType: mimeType,
+      metadata: { firebaseStorageDownloadTokens: downloadToken },
+    },
   });
-  await file.makePublic();
 
-  return `https://storage.googleapis.com/${bucket.name}/${path}`;
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${downloadToken}`;
 }
 
 /**

@@ -17,6 +17,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnalysisThumbnail } from "@/components/rawnak/analysis-thumbnail";
 import { toast } from "sonner";
 
 export function SkinAnalysis() {
@@ -422,11 +423,7 @@ export function SkinAnalysis() {
                 className="shrink-0 w-24 text-center group"
               >
                 <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-border group-hover:border-primary transition-colors">
-                  <img
-                    src={a.imageData}
-                    alt="تحليل"
-                    className="w-full h-full object-cover"
-                  />
+                  <AnalysisThumbnail src={a.imageData} className="w-full h-full object-cover" />
                 </div>
                 <p className="text-xs font-bold mt-1 rawnak-gold-text">
                   {a.overall}
