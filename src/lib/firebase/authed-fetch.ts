@@ -1,6 +1,7 @@
 "use client";
 
 import { firebaseAuth } from "@/lib/firebase/client";
+import { apiUrl } from "@/lib/api-url";
 
 /**
  * Drop-in replacement for `fetch()` against any of our own protected API
@@ -20,7 +21,7 @@ export async function authedFetch(url: string, options: RequestInit = {}): Promi
   const headers = new Headers(options.headers);
   if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(apiUrl(url), { ...options, headers });
 
   // Some hosting/platform failures return an empty 5xx response. Admin
   // screens expect JSON, so turn that empty body into a useful JSON error
