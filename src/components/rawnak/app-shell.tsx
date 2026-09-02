@@ -12,6 +12,7 @@ import { AchievementCelebration } from "./achievement-celebration";
 import { WelcomeBackOverlay } from "./welcome-back-overlay";
 import { AppTourOverlay } from "./app-tour-overlay";
 import { ErrorBoundary } from "./error-boundary";
+import { Button } from "@/components/ui/button";
 
 // Skeleton loader for lazily fetched view components to improve perceived performance
 function ScreenSkeleton() {
@@ -109,11 +110,14 @@ export function AppShell() {
   const routine = useAppStore((s) => s.routine);
   const streak = useAppStore((s) => s.streak);
   const isAuthed = useAppStore((s) => s.isAuthed);
+  const isGuest = useAppStore((s) => s.isGuest);
+  const logout = useAppStore((s) => s.logout);
   const analyses = useAppStore((s) => s.analyses);
   const cabinet = useAppStore((s) => s.cabinet);
   const ensureCountryDetected = useAppStore((s) => s.ensureCountryDetected);
   const routineProgress =
     routine.length > 0 ? Math.round((routine.filter((r) => r.done).length / routine.length) * 100) : 0;
+  const guestAuthRequired = isGuest && ["chat", "analysis", "scanner", "cabinet-scan"].includes(view);
   // Persist user data to Firestore (offline-first + server backup)
   useDbSync();
   // Real Android back button/gesture navigates the app's own screen stack
@@ -168,12 +172,26 @@ export function AppShell() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
       >
         <ErrorBoundary>
-          {view === "home" && <HomeDashboard />}
+          {guestAuthRequired && (
+            <div className="min-h-[60vh] grid place-items-center text-center px-6">
+              <div className="space-y-4 max-w-sm">
+                <h1 className="text-xl font-extrabold">هذه الأداة تحتاج حسابًا</h1>
+                <p className="text-sm text-muted-foreground">
+                  سجّلي الدخول لحماية نتائجكِ وحفظها. يمكنكِ متابعة تصفح المكتبة والأكاديمية والمنتجات كضيفة.
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button variant="outline" onClick={() => useAppStore.getState().setView("home")}>العودة</Button>
+                  <Button onClick={logout}>تسجيل الدخول</Button>
+                </div>
+              </div>
+            </div>
+          )}
+          {!guestAuthRequired && view === "home" && <HomeDashboard />}
           {view === "journey" && <JourneyScreen />}
-          {view === "chat" && <AiChat />}
-          {view === "analysis" && <SkinAnalysis />}
+          {!guestAuthRequired && view === "chat" && <AiChat />}
+          {!guestAuthRequired && view === "analysis" && <SkinAnalysis />}
           {view === "results" && <ResultsScreen />}
-          {view === "scanner" && <MakeupScanner />}
+          {!guestAuthRequired && view === "scanner" && <MakeupScanner />}
           {view === "library" && <LibraryScreen />}
           {view === "profile" && <ProfileScreen />}
           {view === "products" && <ProductsScreen />}
@@ -188,7 +206,7 @@ export function AppShell() {
           {view === "about" && <AboutScreen />}
           {view === "vip" && <VipScreen />}
           {view === "invite" && <InviteScreen />}
-          {view === "cabinet-scan" && <CabinetScanScreen />}
+          {!guestAuthRequired && view === "cabinet-scan" && <CabinetScanScreen />}
           {view === "style" && <StyleStudioScreen />}
           {view === "support" && <SupportScreen />}
         </ErrorBoundary>

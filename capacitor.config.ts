@@ -16,16 +16,7 @@ const config: CapacitorConfig = {
   // Must remain identical to the package already registered in Google Play.
   appId: "com.rawnakapp.www.twa",
   appName: "رَونق",
-  webDir: "public", // unused while server.url is set, but required by the CLI schema
-
-  server: {
-    url: "https://www.rawnakapp.com",
-    androidScheme: "https",
-    // Set to true ONLY during local development against `npm run dev` on
-    // your own machine (cleartext HTTP on your LAN) — must be false/removed
-    // for the production build you submit to Google Play.
-    allowNavigation: ["www.rawnakapp.com", "rawnakapp.com"],
-  },
+  webDir: "public",
 
   android: {
     // Matches the app's rose-gold brand background instead of a jarring
@@ -35,7 +26,10 @@ const config: CapacitorConfig = {
 
   plugins: {
     SplashScreen: {
-      launchShowDuration: 800,
+      // page.tsx hides this on the first rendered React frame. This short
+      // auto-hide is only a safety fallback if the remote page never loads.
+      launchShowDuration: 1500,
+      launchAutoHide: true,
       backgroundColor: "#1a1015",
       showSpinner: false,
       androidScaleType: "CENTER_CROP",
@@ -44,6 +38,13 @@ const config: CapacitorConfig = {
       // Capacitor's DARK style renders a light foreground on Android.
       style: "DARK",
       backgroundColor: "#1a1015",
+    },
+    FirebaseAuthentication: {
+      // Email/password remains on the existing JS SDK. Google requests
+      // skipNativeAuth per-call, then exchanges the native ID token into
+      // that same persistent JS Firebase session.
+      skipNativeAuth: false,
+      providers: ["google.com"],
     },
     Keyboard: {
       // Resizes the WebView's visible viewport (like Android's

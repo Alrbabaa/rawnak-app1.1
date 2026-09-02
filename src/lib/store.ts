@@ -15,7 +15,7 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { googleProvider } from "@/lib/firebase/google-provider";
+import { googleProvider, signInWithGoogleNative } from "@/lib/firebase/google-provider";
 import { appleProvider } from "@/lib/firebase/apple-provider";
 import { firebaseAuthErrorMessage } from "@/lib/firebase/error-messages";
 import { clearRegisteredPush } from "@/lib/firebase/messaging";
@@ -883,6 +883,11 @@ export const useAppStore = create<AppState>()(
 
       signInWithGoogle: async (referralCode) => {
         try {
+          if (Capacitor.getPlatform() === "android") {
+            const cred = await signInWithGoogleNative();
+            const isNewUser = getAdditionalUserInfo(cred)?.isNewUser ?? false;
+            return await finishOAuthSignIn(cred.user, referralCode, set, isNewUser, "google");
+          }
           if (Capacitor.isNativePlatform()) {
             // Popups don't work inside the Capacitor WebView (and Google
             // actively blocks OAuth in generic embedded webviews), so on
@@ -1030,7 +1035,9 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           isAuthed: true,
           authChecked: true,
+          hasOnboarded: true,
           isGuest: true,
+          view: "home",
           profile: {
             ...s.profile,
             email: "",

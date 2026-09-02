@@ -36,5 +36,17 @@ export async function authedFetch(url: string, options: RequestInit = {}): Promi
     );
   }
 
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return new Response(
+      JSON.stringify({ error: "تعذّر الاتصال بخادم رَونق. تحققي من عنوان الخادم ثم حاولي مرة أخرى." }),
+      {
+        status: response.ok ? 502 : response.status,
+        statusText: response.ok ? "Bad Gateway" : response.statusText,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      }
+    );
+  }
+
   return response;
 }

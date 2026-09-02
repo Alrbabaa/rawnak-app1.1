@@ -2,6 +2,7 @@
 
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
+import { installApiRouting } from "@/lib/api-url";
 
 /**
  * Firebase client SDK — browser-side only.
@@ -21,6 +22,8 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:123456789:web:abcdef",
 };
+
+installApiRouting();
 
 function getClientApp(): FirebaseApp {
   if (getApps().length > 0) return getApps()[0]!;

@@ -111,7 +111,16 @@ export function useSubscription() {
       setOffering(result.current);
       return { __unavailable__: false as const };
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذّر تحميل باقات الاشتراك");
+      const message = err instanceof Error ? err.message : "";
+      const code = (err as { code?: string })?.code || "";
+      const isConfigurationError =
+        code.toLowerCase().includes("configuration") ||
+        message.toLowerCase().includes("configuration");
+      setError(
+        isConfigurationError
+          ? "لم تُهيّأ باقات Google Play لهذا التطبيق بعد. تحققي من package com.rawnakapp.www.twa والـ Offering في RevenueCat."
+          : message || "تعذّر تحميل باقات الاشتراك"
+      );
       return { __unavailable__: false as const };
     } finally {
       setLoading(false);

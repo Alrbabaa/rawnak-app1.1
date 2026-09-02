@@ -1,6 +1,12 @@
 "use client";
 
-import { GoogleAuthProvider } from "firebase/auth";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+import {
+  GoogleAuthProvider,
+  signInWithCredential,
+  type UserCredential,
+} from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase/client";
 
 /**
  * Shared Google OAuth provider for Firebase Auth. One instance reused by
@@ -14,3 +20,15 @@ import { GoogleAuthProvider } from "firebase/auth";
  */
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
+
+/** Android-only native Google account chooser, bridged back into the
+ * existing Firebase Web SDK session used by the rest of the application. */
+export async function signInWithGoogleNative(): Promise<UserCredential> {
+  const result = await FirebaseAuthentication.signInWithGoogle({
+    skipNativeAuth: true,
+    useCredentialManager: true,
+  });
+  const idToken = result.credential?.idToken;
+  if (!idToken) throw new Error("لم يُرجع Google رمز تسجيل دخول صالحًا");
+  return signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken));
+}

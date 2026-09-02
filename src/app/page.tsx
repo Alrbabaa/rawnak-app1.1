@@ -12,6 +12,8 @@ import { useNativeStatusBar } from "@/hooks/use-native-status-bar";
 import { useDeepLinks } from "@/hooks/use-deep-links";
 import { useReferralQueryParam } from "@/hooks/use-referral-query-param";
 import { useFirebaseAuthListener } from "@/hooks/use-firebase-auth";
+import { Capacitor } from "@capacitor/core";
+import { SplashScreen as NativeSplashScreen } from "@capacitor/splash-screen";
 
 export default function Home() {
   const router = useRouter();
@@ -42,6 +44,20 @@ export default function Home() {
   // a fetch-based session check. Guests never touch Firebase at all.
   useFirebaseAuthListener();
 
+  // Reveal the locally-bundled app only once both the React frame is ready
+  // AND critical init (Firebase auth restoration) has settled. The native
+  // configuration retains a finite fallback (1500ms) for safety.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    if (!authChecked) return;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        void NativeSplashScreen.hide().catch(() => {});
+      });
+    });
+  }, [authChecked]);
+
   // Admin/super_admin accounts land in the admin dashboard automatically,
   // not the consumer app — this is a UX convenience only, not a security
   // boundary: /admin/page.tsx independently re-verifies the role itself
@@ -57,7 +73,7 @@ export default function Home() {
   }, [isAuthed, isGuest, role, router]);
 
   // Decide route
-  if (view === "splash" || (!isGuest && !authChecked)) {
+  if (!isGuest && !authChecked) {
     return (
       <ErrorBoundary>
         <SplashScreen />
@@ -98,4 +114,3 @@ export default function Home() {
     </ErrorBoundary>
   );
 }
-
