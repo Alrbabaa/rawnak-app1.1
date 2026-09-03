@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gate = await checkFeatureGate(req, "videoRecommendations");
+    const gate = await checkFeatureGate(req, "videoRecommendations", "video-recommendations");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -88,6 +88,7 @@ ${videoList || "لا توجد فيديوهات متاحة"}`;
     const usage = await recordFeatureUse(
       gate.userRef,
       "videoRecommendations",
+      "video-recommendations",
       gate.usageCount,
       gate.isPremium,
       gate.limit

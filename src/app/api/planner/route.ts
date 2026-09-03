@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gate = await checkFeatureGate(req, "planner");
+    const gate = await checkFeatureGate(req, "planner", "planner");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(parsed.tips)) parsed.tips = [];
     if (!parsed.duration) parsed.duration = "30-45 دقيقة";
 
-    const usage = await recordFeatureUse(gate.userRef, "planner", gate.usageCount, gate.isPremium, gate.limit);
+    const usage = await recordFeatureUse(gate.userRef, "planner", "planner", gate.usageCount, gate.isPremium, gate.limit);
 
     return NextResponse.json({ ...parsed, usage });
   } catch (err: unknown) {

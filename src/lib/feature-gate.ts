@@ -16,7 +16,8 @@ import { computeVipAccess } from "@/lib/vip-access";
 /** Server-side usage gate shared by every AI route. */
 export async function checkFeatureGate(
   req: NextRequest,
-  featureId: FeatureId
+  featureId: FeatureId,
+  featureName: string
 ): Promise<
   | { ok: true; uid: string; userRef: FirebaseFirestore.DocumentReference; isPremium: boolean; usageCount: number; limit: FeatureLimit }
   | { ok: false; response: NextResponse }
@@ -52,27 +53,9 @@ export async function checkFeatureGate(
   };
 
   const tier = isPremium ? "vip" : "normal";
-  const window = usageWindow(isPremium ? limit.vipPeriodDays : limit.normalPeriodDays);
-  const usageCount = (user.featureUsageWindows?.[tier]?.[featureId]?.[window.key] as number | undefined) || 0;
-
-  // Free AI access is a shared daily allowance, not one allowance per
-  // endpoint. This prevents switching between chat, analysis, planner, and
-  // scanners from bypassing the product's one-free-use-per-day policy.
-  const globalDailyKey = usageWindow(1).key;
-  const globalDailyUsage = (user.featureUsageWindows?.normal?.aiDaily?.[globalDailyKey] as number | undefined) || 0;
-  if (!isPremium && globalDailyUsage >= 1) {
-    const globalWindow = usageWindow(1);
-    return {
-      ok: false,
-      response: NextResponse.json({
-        error: "استخدمتِ رصيد الذكاء الاصطناعي المجاني اليوم. اشتركي للوصول إلى استخدامات أكثر، أو عودي غدًا.",
-        upgradeRequired: true,
-        limitReached: true,
-        quotaPolicy: "shared-daily-v1",
-        resetAt: globalWindow.resetAt,
-      }, { status: 403 }),
-    };
-  }
+  const periodDays = isPremium ? limit.vipPeriodDays : limit.normalPeriodDays;
+  const window = usageWindow(periodDays);
+  const usageCount = (user.featureUsageWindows?.[featureName]?.[tier]?.aiDaily?.[window.key] as number | undefined) || 0;
 
   if (!canUseFeature(featureId, isPremium, usageCount, limit)) {
     const periodDays = isPremium ? limit.vipPeriodDays : limit.normalPeriodDays;
@@ -82,6 +65,7 @@ export async function checkFeatureGate(
         error: `وصلتِ إلى الحد المتاح لهذه الميزة. سيُعاد ضبطه تلقائيًا كل ${periodDays} ${periodDays === 1 ? "يوم" : "أيام"}.`,
         upgradeRequired: !isPremium,
         limitReached: true,
+        featureName,
         resetAt: window.resetAt,
       }, { status: 403 }),
     };
@@ -94,6 +78,7 @@ export async function checkFeatureGate(
 export async function recordFeatureUse(
   userRef: FirebaseFirestore.DocumentReference,
   featureId: FeatureId,
+  featureName: string,
   usageCountBefore: number,
   isPremium: boolean,
   limit?: FeatureLimit
@@ -106,10 +91,7 @@ export async function recordFeatureUse(
 
   await userRef.set(
     {
-      [`featureUsageWindows.${tier}.${featureId}.${window.key}`]: FieldValue.increment(1),
-      ...(!isPremium
-        ? { [`featureUsageWindows.normal.aiDaily.${usageWindow(1).key}`]: FieldValue.increment(1) }
-        : {}),
+      [`featureUsageWindows.${featureName}.${tier}.aiDaily.${window.key}`]: FieldValue.increment(1),
     },
     { merge: true }
   );

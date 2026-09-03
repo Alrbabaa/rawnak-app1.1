@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     // enforcement. This route previously had no session/tier check at all,
     // so anyone who called it directly — including a signed-out guest —
     // got the full AI routine for free. Mirrors every other AI route now.
-    const gate = await checkFeatureGate(req, "cabinetRoutine");
+    const gate = await checkFeatureGate(req, "cabinetRoutine", "cabinet-routine");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -85,7 +85,7 @@ ${cabinetProducts.map((p, i) => `${i + 1}. ${p.name} (${p.subCategory || p.categ
     if (!Array.isArray(parsed.missing)) parsed.missing = [];
     if (!parsed.summary) parsed.summary = "";
 
-    await recordFeatureUse(gate.userRef, "cabinetRoutine", gate.usageCount, gate.isPremium, gate.limit);
+    await recordFeatureUse(gate.userRef, "cabinetRoutine", "cabinet-routine", gate.usageCount, gate.isPremium, gate.limit);
 
     return NextResponse.json(parsed);
   } catch (err: unknown) {

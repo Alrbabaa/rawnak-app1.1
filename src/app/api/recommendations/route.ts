@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gate = await checkFeatureGate(req, "recommendations");
+    const gate = await checkFeatureGate(req, "recommendations", "recommendations");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -98,7 +98,7 @@ ${
 
     return NextResponse.json({
       products: parsed.slice(0, 6),
-      usage: await recordFeatureUse(gate.userRef, "recommendations", gate.usageCount, gate.isPremium, gate.limit),
+      usage: await recordFeatureUse(gate.userRef, "recommendations", "recommendations", gate.usageCount, gate.isPremium, gate.limit),
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "خطأ غير معروف";

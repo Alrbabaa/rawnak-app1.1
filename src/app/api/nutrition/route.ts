@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gate = await checkFeatureGate(req, "nutritionTips");
+    const gate = await checkFeatureGate(req, "nutritionTips", "nutrition");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.dailyTip) parsed.dailyTip = "";
     if (!parsed.intro) parsed.intro = "";
 
-    const usage = await recordFeatureUse(gate.userRef, "nutritionTips", gate.usageCount, gate.isPremium, gate.limit);
+    const usage = await recordFeatureUse(gate.userRef, "nutritionTips", "nutrition", gate.usageCount, gate.isPremium, gate.limit);
 
     return NextResponse.json({ ...parsed, usage });
   } catch (err: unknown) {

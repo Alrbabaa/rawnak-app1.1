@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "صورة غير صالحة" }, { status: 400 });
     }
 
-    const gate = await checkFeatureGate(req, FEATURE_ID);
+    const gate = await checkFeatureGate(req, FEATURE_ID, "cabinet-scan");
     if (!gate.ok) return gate.response;
 
     const parsed = await aiService.visionJson<ScanResult>(SCAN_PROMPT, [image]);
@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
     const usage = await recordFeatureUse(
       gate.userRef,
       FEATURE_ID,
+      "cabinet-scan",
       gate.usageCount,
       gate.isPremium,
       gate.limit

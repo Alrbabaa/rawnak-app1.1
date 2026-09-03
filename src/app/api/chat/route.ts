@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gate = await checkFeatureGate(req, "aiChat");
+    const gate = await checkFeatureGate(req, "aiChat", "chat");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -231,7 +231,7 @@ ${flairInstruction}${dialectLine ? `\n${dialectLine}` : ""}`;
 
     const response = await aiService.chat(messages);
 
-    const usage = await recordFeatureUse(gate.userRef, "aiChat", gate.usageCount, gate.isPremium, gate.limit);
+    const usage = await recordFeatureUse(gate.userRef, "aiChat", "chat", gate.usageCount, gate.isPremium, gate.limit);
 
     return NextResponse.json({ response, usage });
   } catch (err: unknown) {

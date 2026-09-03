@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gate = await checkFeatureGate(req, "weatherTips");
+    const gate = await checkFeatureGate(req, "weatherTips", "weather-tips");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     if (!Array.isArray(parsed.routineAdjust)) parsed.routineAdjust = [];
 
-    const usage = await recordFeatureUse(gate.userRef, "weatherTips", gate.usageCount, gate.isPremium, gate.limit);
+    const usage = await recordFeatureUse(gate.userRef, "weatherTips", "weather-tips", gate.usageCount, gate.isPremium, gate.limit);
 
     return NextResponse.json({ ...parsed, usage });
   } catch (err: unknown) {

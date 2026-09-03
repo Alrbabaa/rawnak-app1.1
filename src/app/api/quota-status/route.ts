@@ -15,15 +15,31 @@ export async function GET(req: NextRequest) {
 
   const user = snapshot.data() || {};
   const isVip = computeVipAccess(user.isPremium, user.subscriptionExpiresAt, user.vipTrialExpiresAt);
-  const window = usageWindow(1);
-  const dailyUsage = (user.featureUsageWindows?.normal?.aiDaily?.[window.key] as number | undefined) || 0;
+  const featureNames = [
+    "chat",
+    "skin-analysis",
+    "cabinet-scan",
+    "cabinet-routine",
+    "product-scan",
+    "recommendations",
+    "nutrition",
+    "planner",
+    "weather-tips",
+    "video-recommendations",
+  ];
+  const window = usageWindow(isVip ? 7 : 1);
+  const usage = Object.fromEntries(
+    featureNames.map((featureName) => [
+      featureName,
+      (user.featureUsageWindows?.[featureName]?.[isVip ? "vip" : "normal"]?.aiDaily?.[window.key] as number | undefined) || 0,
+    ])
+  );
 
   return NextResponse.json({
     uid: session.uid,
     isVip,
     freeDailyLimit: 1,
-    dailyUsage,
-    dailyRemaining: isVip ? null : Math.max(0, 1 - dailyUsage),
+    usage,
     resetAt: window.resetAt,
     quotaPolicy: "shared-daily-v1",
     deployment: process.env.VERCEL_GIT_COMMIT_SHA || "local",

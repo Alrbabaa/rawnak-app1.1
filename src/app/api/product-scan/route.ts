@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gate = await checkFeatureGate(req, "productScan");
+    const gate = await checkFeatureGate(req, "productScan", "product-scan");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(parsed.warnings)) parsed.warnings = [];
     if (!parsed.usage) parsed.usage = "استخدمي حسب تعليمات العبوة.";
 
-    const usage = await recordFeatureUse(gate.userRef, "productScan", gate.usageCount, gate.isPremium, gate.limit);
+    const usage = await recordFeatureUse(gate.userRef, "productScan", "product-scan", gate.usageCount, gate.isPremium, gate.limit);
 
     return NextResponse.json({ ...parsed, usage });
   } catch (err: unknown) {

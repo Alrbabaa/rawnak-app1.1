@@ -276,7 +276,7 @@ export async function POST(req: NextRequest) {
 
     // VIP feature with a free trial for regular accounts — server-side
     // check is what actually enforces the limit (see feature-gate.ts).
-    const gate = await checkFeatureGate(req, "skinAnalysis");
+    const gate = await checkFeatureGate(req, "skinAnalysis", "skin-analysis");
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
@@ -334,7 +334,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const usage = await recordFeatureUse(gate.userRef, "skinAnalysis", gate.usageCount, gate.isPremium, gate.limit);
+    const usage = await recordFeatureUse(gate.userRef, "skinAnalysis", "skin-analysis", gate.usageCount, gate.isPremium, gate.limit);
 
     return NextResponse.json({ ...toSkinAnalysisResponse(final), usage });
   } catch (err: unknown) {
