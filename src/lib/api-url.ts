@@ -2,7 +2,8 @@
 
 import { Capacitor } from "@capacitor/core";
 
-const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "").trim().replace(/\/+$/, "");
+const configuredBackendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "").trim();
+const backendUrl = (configuredBackendUrl || "https://www.rawnakapp.com").replace(/\/+$/, "");
 
 export function apiUrl(path: string): string {
   if (!path.startsWith("/api/")) return path;
@@ -15,10 +16,6 @@ let installed = false;
 export function installApiRouting(): void {
   if (installed || typeof window === "undefined") return;
   installed = true;
-
-  if (Capacitor.isNativePlatform() && !backendUrl) {
-    console.error("[API] NEXT_PUBLIC_BACKEND_URL is required for native builds.");
-  }
 
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input, init) => {
