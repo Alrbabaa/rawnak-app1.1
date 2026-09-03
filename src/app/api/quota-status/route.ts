@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { getSessionFromRequest } from "@/lib/firebase-session";
 import { computeVipAccess } from "@/lib/vip-access";
-import { usageWindowHours } from "@/lib/features";
+import { defaultResetIntervalHours, FEATURE_LIMITS, usageWindowHours, type FeatureId } from "@/lib/features";
 
 export const runtime = "nodejs";
 
@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
 
   const user = snapshot.data() || {};
   const isVip = computeVipAccess(user.isPremium, user.subscriptionExpiresAt, user.vipTrialExpiresAt);
+  const storedLimits = (await adminDb.collection("settings").doc("general").get()).data()?.aiLimits || {};
   const featureNames = [
     "chat",
     "skin-analysis",
@@ -27,11 +28,28 @@ export async function GET(req: NextRequest) {
     "weather-tips",
     "video-recommendations",
   ];
-  const window = usageWindowHours(isVip ? 24 * 30 : 24);
   const usage = Object.fromEntries(
     featureNames.map((featureName) => [
       featureName,
-      (user.featureUsageWindows?.[featureName]?.[isVip ? "vip" : "normal"]?.aiDaily?.[window.key] as number | undefined) || 0,
+      (() => {
+        const featureId = {
+          chat: "aiChat",
+          "skin-analysis": "skinAnalysis",
+          "cabinet-scan": "cabinetAiScan",
+          "cabinet-routine": "cabinetRoutine",
+          "product-scan": "productScan",
+          recommendations: "recommendations",
+          nutrition: "nutritionTips",
+          planner: "planner",
+          "weather-tips": "weatherTips",
+          "video-recommendations": "videoRecommendations",
+        }[featureName] as FeatureId;
+        const configured = storedLimits[featureId] || {};
+        const intervalHours = Number(configured[isVip ? "vipResetIntervalHours" : "normalResetIntervalHours"])
+          || defaultResetIntervalHours(featureId, isVip);
+        const window = usageWindowHours(intervalHours);
+        return (user.featureUsageWindows?.[featureName]?.[isVip ? "vip" : "normal"]?.aiDaily?.[window.key] as number | undefined) || 0;
+      })(),
     ])
   );
 
@@ -40,7 +58,7 @@ export async function GET(req: NextRequest) {
     isVip,
     freeDailyLimit: 1,
     usage,
-    resetAt: window.resetAt,
+    resetAt: null,
     quotaPolicy: "per-feature-v1",
     deployment: process.env.VERCEL_GIT_COMMIT_SHA || "local",
   });
