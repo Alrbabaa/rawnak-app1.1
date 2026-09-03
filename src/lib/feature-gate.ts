@@ -70,7 +70,7 @@ export async function checkFeatureGate(
         limitReached: true,
         quotaPolicy: "shared-daily-v1",
         resetAt: globalWindow.resetAt,
-      }, { status: 429 }),
+      }, { status: 403 }),
     };
   }
 
@@ -83,7 +83,7 @@ export async function checkFeatureGate(
         upgradeRequired: !isPremium,
         limitReached: true,
         resetAt: window.resetAt,
-      }, { status: 429 }),
+      }, { status: 403 }),
     };
   }
 
