@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldPath, FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getSessionFromRequest } from "@/lib/firebase-session";
 import {
@@ -68,10 +68,10 @@ export async function checkFeatureGate(
     // Reserve the allowance before any provider call. Firestore serializes
     // concurrent requests for the same user document, so only one request
     // can reserve a one-use quota window.
-    tx.set(
+    tx.update(
       userRef,
-      { [`featureUsageWindows.${featureName}.${tier}.aiDaily.${window.key}`]: FieldValue.increment(1) },
-      { merge: true }
+      new FieldPath("featureUsageWindows", featureName, tier, "aiDaily", window.key),
+      FieldValue.increment(1)
     );
     console.info("[quota] reserved", {
       uid: session.uid,
@@ -95,6 +95,7 @@ export async function checkFeatureGate(
       ok: false,
       response: NextResponse.json({
         error: `وصلتِ إلى الحد المتاح لأداة ${featureName}. سيُعاد ضبطه تلقائيًا بعد ${reservation.resetIntervalHours} ساعة.`,
+        code: "QUOTA_EXCEEDED",
         code: "QUOTA_EXCEEDED",
         upgradeRequired: !reservation.isPremium,
         limitReached: true,
