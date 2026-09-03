@@ -170,7 +170,7 @@ export async function generateInviteCard(referralCode: string, inviterName?: str
   );
 
   // CTA footer
-  centerText(ctx, "rawnak.app", WIDTH / 2, HEIGHT - 130, "500 34px Cairo, sans-serif", "rgba(255,255,255,0.6)");
+  centerText(ctx, "www.rawnakapp.com", WIDTH / 2, HEIGHT - 130, "500 34px Cairo, sans-serif", "rgba(255,255,255,0.6)");
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))), "image/png", 0.95);

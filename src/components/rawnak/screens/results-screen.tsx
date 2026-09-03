@@ -98,7 +98,7 @@ export function ResultsScreen() {
         blob,
         filename: `rawnak-glow-${Math.round(analysis.overall)}.png`,
         title: "توهجي مع رَونق ✦",
-        text: "جرّبي تحليل بشرتكِ المجاني على رَونق ✦ rawnak.app",
+        text: "جرّبي تحليل بشرتكِ المجاني على رَونق ✦ https://www.rawnakapp.com",
       });
       if (result.fallback === "downloaded") {
         toast.success("تم حفظ البطاقة — شاركيها من معرض الصور ✦");
