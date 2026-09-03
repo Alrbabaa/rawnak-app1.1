@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 const allowedOrigins = new Set([
   "http://localhost",
   "http://localhost:3000",
+  "https://localhost",
   "capacitor://localhost",
   "ionic://localhost",
   "https://rawnak-app1-1.vercel.app",
