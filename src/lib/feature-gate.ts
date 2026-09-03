@@ -96,7 +96,6 @@ export async function checkFeatureGate(
       response: NextResponse.json({
         error: `وصلتِ إلى الحد المتاح لأداة ${featureName}. سيُعاد ضبطه تلقائيًا بعد ${reservation.resetIntervalHours} ساعة.`,
         code: "QUOTA_EXCEEDED",
-        code: "QUOTA_EXCEEDED",
         upgradeRequired: !reservation.isPremium,
         limitReached: true,
         featureName,
