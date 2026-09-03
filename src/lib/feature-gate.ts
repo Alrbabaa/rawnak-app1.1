@@ -68,6 +68,7 @@ export async function checkFeatureGate(
         error: "استخدمتِ رصيد الذكاء الاصطناعي المجاني اليوم. اشتركي للوصول إلى استخدامات أكثر، أو عودي غدًا.",
         upgradeRequired: true,
         limitReached: true,
+        quotaPolicy: "shared-daily-v1",
         resetAt: globalWindow.resetAt,
       }, { status: 429 }),
     };
