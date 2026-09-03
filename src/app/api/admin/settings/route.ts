@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const aiLimits = Object.fromEntries(
     (Object.keys(FEATURE_LIMITS) as FeatureId[]).map((featureId) => [
       featureId,
-      { ...DEFAULTS.aiLimits[featureId], ...(storedLimits[featureId] || {}), freeUses: 1, normalPeriodDays: 1 },
+      { ...DEFAULTS.aiLimits[featureId], ...(storedLimits[featureId] || {}) },
     ])
   );
   return NextResponse.json({ settings: {
@@ -57,14 +57,14 @@ export async function PUT(req: NextRequest) {
     if (body.announcementEnabled !== undefined) data.announcementEnabled = body.announcementEnabled === true;
     if (body.announcementText !== undefined) data.announcementText = String(body.announcementText);
     if (body.aiLimits && typeof body.aiLimits === "object") {
-      const aiLimits: Record<string, { freeUses: number; vipMonthlyCap: number; normalPeriodDays: number; vipPeriodDays: number }> = {};
+      const aiLimits: Record<string, { freeUses: number; vipMonthlyCap: number; normalResetIntervalHours: number; vipResetIntervalHours: number }> = {};
       for (const featureId of Object.keys(FEATURE_LIMITS) as FeatureId[]) {
         const value = body.aiLimits[featureId];
         aiLimits[featureId] = {
-          freeUses: 1,
+          freeUses: Math.max(0, Math.min(10000, Math.floor(Number(value?.freeUses) || 0))),
           vipMonthlyCap: Math.max(0, Math.min(10000, Math.floor(Number(value?.vipMonthlyCap) || 0))),
-          normalPeriodDays: 1,
-          vipPeriodDays: Math.max(1, Math.min(365, Math.floor(Number(value?.vipPeriodDays) || 1))),
+          normalResetIntervalHours: Math.max(1, Math.min(8760, Math.floor(Number(value?.normalResetIntervalHours) || 24))),
+          vipResetIntervalHours: Math.max(1, Math.min(8760, Math.floor(Number(value?.vipResetIntervalHours) || 720))),
         };
       }
       data.aiLimits = aiLimits;

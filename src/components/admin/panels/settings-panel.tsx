@@ -19,7 +19,7 @@ interface Settings {
   maintenanceMessage: string;
   announcementEnabled: boolean;
   announcementText: string;
-  aiLimits: Record<FeatureId, { freeUses: number; vipMonthlyCap: number; normalPeriodDays: number; vipPeriodDays: number }>;
+  aiLimits: Record<FeatureId, { freeUses: number; vipMonthlyCap: number; normalResetIntervalHours: number; vipResetIntervalHours: number }>;
 }
 
 interface SettingsPanelProps {
@@ -103,7 +103,7 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            المستخدم العادي لديه استخدام واحد يوميًا مشترك بين جميع أدوات الذكاء الاصطناعي. يمكن التحكم بحدود VIP من هنا، وتُعاد الحصة المجانية تلقائيًا كل يوم.
+            يمكنك تعديل عدد المحاولات وفترة التجديد لكل أداة بشكل مستقل. القيم تطبق فورًا من الخادم.
           </p>
           <div className="space-y-2">
             {(Object.keys(FEATURE_LIMITS) as FeatureId[]).map((featureId) => (
@@ -121,13 +121,20 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">دورة العادي (يوميًا)</Label>
+                  <Label className="text-[11px]">تجديد العادي (ساعات)</Label>
                   <Input
                     type="number"
                     min={1}
-                    max={365}
-                    value={settings.aiLimits[featureId].normalPeriodDays}
-                    disabled
+                    max={8760}
+                    value={settings.aiLimits[featureId].normalResetIntervalHours}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      aiLimits: {
+                        ...settings.aiLimits,
+                        [featureId]: { ...settings.aiLimits[featureId], normalResetIntervalHours: Number(e.target.value) },
+                      },
+                    })}
+                    disabled={!canEdit}
                     className="rounded-xl"
                   />
                 </div>
@@ -150,17 +157,17 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">دورة VIP (أيام)</Label>
+                  <Label className="text-[11px]">تجديد VIP (ساعات)</Label>
                   <Input
                     type="number"
                     min={1}
-                    max={365}
-                    value={settings.aiLimits[featureId].vipPeriodDays}
+                    max={8760}
+                    value={settings.aiLimits[featureId].vipResetIntervalHours}
                     onChange={(e) => setSettings({
                       ...settings,
                       aiLimits: {
                         ...settings.aiLimits,
-                        [featureId]: { ...settings.aiLimits[featureId], vipPeriodDays: Number(e.target.value) },
+                        [featureId]: { ...settings.aiLimits[featureId], vipResetIntervalHours: Number(e.target.value) },
                       },
                     })}
                     disabled={!canEdit}

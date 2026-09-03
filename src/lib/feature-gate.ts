@@ -4,10 +4,10 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getSessionFromRequest } from "@/lib/firebase-session";
 import {
   canUseFeature,
-  defaultPeriodDays,
+  defaultResetIntervalHours,
   FEATURE_LIMITS,
   remainingFreeUses,
-  usageWindow,
+  usageWindowHours,
   type FeatureId,
   type FeatureLimit,
 } from "@/lib/features";
@@ -41,28 +41,22 @@ export async function checkFeatureGate(
   const configured = settingsSnap.data()?.aiLimits?.[featureId] as Partial<FeatureLimit> | undefined;
   const defaults = FEATURE_LIMITS[featureId];
   const limit: FeatureLimit = {
-    // The normal tier is intentionally one use per day for every AI
-    // feature. Do not allow legacy or editable Firestore values to raise
-    // this limit above the product policy.
-    freeUses: 1,
+    freeUses: Number.isInteger(configured?.freeUses) && configured!.freeUses! >= 0 ? configured!.freeUses! : defaults.freeUses,
     vipMonthlyCap: Number.isInteger(configured?.vipMonthlyCap) && configured!.vipMonthlyCap! >= 0 ? configured!.vipMonthlyCap! : defaults.vipMonthlyCap,
-    // All free AI features have one daily allowance. Keep this invariant
-    // even if an older admin setting stores a longer period in Firestore.
-    normalPeriodDays: 1,
-    vipPeriodDays: Number.isInteger(configured?.vipPeriodDays) && configured!.vipPeriodDays! > 0 ? configured!.vipPeriodDays! : defaultPeriodDays(featureId, true),
+    normalResetIntervalHours: Number.isInteger(configured?.normalResetIntervalHours) && configured!.normalResetIntervalHours! > 0 ? configured!.normalResetIntervalHours! : defaultResetIntervalHours(featureId, false),
+    vipResetIntervalHours: Number.isInteger(configured?.vipResetIntervalHours) && configured!.vipResetIntervalHours! > 0 ? configured!.vipResetIntervalHours! : defaultResetIntervalHours(featureId, true),
   };
 
   const tier = isPremium ? "vip" : "normal";
-  const periodDays = isPremium ? limit.vipPeriodDays : limit.normalPeriodDays;
-  const window = usageWindow(periodDays);
+  const resetIntervalHours = isPremium ? limit.vipResetIntervalHours : limit.normalResetIntervalHours;
+  const window = usageWindowHours(resetIntervalHours);
   const usageCount = (user.featureUsageWindows?.[featureName]?.[tier]?.aiDaily?.[window.key] as number | undefined) || 0;
 
   if (!canUseFeature(featureId, isPremium, usageCount, limit)) {
-    const periodDays = isPremium ? limit.vipPeriodDays : limit.normalPeriodDays;
     return {
       ok: false,
       response: NextResponse.json({
-        error: `وصلتِ إلى الحد المتاح لهذه الميزة. سيُعاد ضبطه تلقائيًا كل ${periodDays} ${periodDays === 1 ? "يوم" : "أيام"}.`,
+        error: `وصلتِ إلى الحد المتاح لأداة ${featureName}. سيُعاد ضبطه تلقائيًا بعد ${resetIntervalHours} ساعة.`,
         upgradeRequired: !isPremium,
         limitReached: true,
         featureName,
@@ -83,10 +77,10 @@ export async function recordFeatureUse(
   isPremium: boolean,
   limit?: FeatureLimit
 ) {
-  const periodDays = isPremium
-    ? (limit?.vipPeriodDays ?? defaultPeriodDays(featureId, true))
-    : (limit?.normalPeriodDays ?? defaultPeriodDays(featureId, false));
-  const window = usageWindow(periodDays);
+  const resetIntervalHours = isPremium
+    ? (limit?.vipResetIntervalHours ?? defaultResetIntervalHours(featureId, true))
+    : (limit?.normalResetIntervalHours ?? defaultResetIntervalHours(featureId, false));
+  const window = usageWindowHours(resetIntervalHours);
   const tier = isPremium ? "vip" : "normal";
 
   await userRef.set(

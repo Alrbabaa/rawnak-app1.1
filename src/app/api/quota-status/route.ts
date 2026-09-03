@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { getSessionFromRequest } from "@/lib/firebase-session";
 import { computeVipAccess } from "@/lib/vip-access";
-import { usageWindow } from "@/lib/features";
+import { usageWindowHours } from "@/lib/features";
 
 export const runtime = "nodejs";
 
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     "weather-tips",
     "video-recommendations",
   ];
-  const window = usageWindow(isVip ? 7 : 1);
+  const window = usageWindowHours(isVip ? 24 * 30 : 24);
   const usage = Object.fromEntries(
     featureNames.map((featureName) => [
       featureName,

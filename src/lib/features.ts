@@ -46,12 +46,12 @@ export type FeatureId = keyof typeof FEATURE_LIMITS;
 export interface FeatureLimit {
   freeUses: number;
   vipMonthlyCap: number;
-  normalPeriodDays: number;
-  vipPeriodDays: number;
+  normalResetIntervalHours: number;
+  vipResetIntervalHours: number;
 }
 
-export function defaultPeriodDays(featureId: FeatureId, isPremium: boolean): number {
-  return isPremium ? 7 : 1;
+export function defaultResetIntervalHours(featureId: FeatureId, isPremium: boolean): number {
+  return isPremium ? 24 * 30 : featureId === "aiChat" ? 5 : 24;
 }
 
 export function defaultAiLimits(): Record<FeatureId, FeatureLimit> {
@@ -59,8 +59,8 @@ export function defaultAiLimits(): Record<FeatureId, FeatureLimit> {
     Object.entries(FEATURE_LIMITS).map(([id, limit]) => [id, {
       freeUses: limit.freeUses,
       vipMonthlyCap: limit.vipMonthlyCap,
-      normalPeriodDays: defaultPeriodDays(id as FeatureId, false),
-      vipPeriodDays: defaultPeriodDays(id as FeatureId, true),
+      normalResetIntervalHours: defaultResetIntervalHours(id as FeatureId, false),
+      vipResetIntervalHours: defaultResetIntervalHours(id as FeatureId, true),
     }])
   ) as Record<FeatureId, FeatureLimit>;
 }
@@ -91,6 +91,14 @@ export function usageWindow(periodDays: number, now = Date.now()): { key: string
   const windowMs = safeDays * 24 * 60 * 60 * 1000;
   const index = Math.floor(now / windowMs);
   return { key: `${safeDays}d-${index}`, resetAt: (index + 1) * windowMs };
+}
+
+/** Rolling UTC-aligned usage window for dynamic per-feature intervals. */
+export function usageWindowHours(intervalHours: number, now = Date.now()): { key: string; resetAt: number } {
+  const safeHours = Math.max(1, Math.floor(intervalHours));
+  const windowMs = safeHours * 60 * 60 * 1000;
+  const index = Math.floor(now / windowMs);
+  return { key: `${safeHours}h-${index}`, resetAt: (index + 1) * windowMs };
 }
 
 /** True when a VIP/trial user has hit this month's soft cap. Free-trial
