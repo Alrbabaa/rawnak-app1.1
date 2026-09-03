@@ -28,16 +28,7 @@ export async function checkFeatureGate(
   }
 
   const userRef = adminDb.collection("users").doc(session.uid);
-  const [userSnap, settingsSnap] = await Promise.all([
-    userRef.get(),
-    adminDb.collection("settings").doc("general").get(),
-  ]);
-  if (!userSnap.exists) {
-    return { ok: false, response: NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 }) };
-  }
-
-  const user = userSnap.data()!;
-  const isPremium = computeVipAccess(user.isPremium, user.subscriptionExpiresAt, user.vipTrialExpiresAt);
+  const settingsSnap = await adminDb.collection("settings").doc("general").get();
   const configured = settingsSnap.data()?.aiLimits?.[featureId] as Partial<FeatureLimit> | undefined;
   const defaults = FEATURE_LIMITS[featureId];
   const limit: FeatureLimit = {
@@ -47,25 +38,49 @@ export async function checkFeatureGate(
     vipResetIntervalHours: Number.isInteger(configured?.vipResetIntervalHours) && configured!.vipResetIntervalHours! > 0 ? configured!.vipResetIntervalHours! : defaultResetIntervalHours(featureId, true),
   };
 
-  const tier = isPremium ? "vip" : "normal";
-  const resetIntervalHours = isPremium ? limit.vipResetIntervalHours : limit.normalResetIntervalHours;
-  const window = usageWindowHours(resetIntervalHours);
-  const usageCount = (user.featureUsageWindows?.[featureName]?.[tier]?.aiDaily?.[window.key] as number | undefined) || 0;
+  const reservation = await adminDb.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef);
+    if (!userSnap.exists) return { kind: "missing" as const };
 
-  if (!canUseFeature(featureId, isPremium, usageCount, limit)) {
+    const user = userSnap.data()!;
+    const isPremium = computeVipAccess(user.isPremium, user.subscriptionExpiresAt, user.vipTrialExpiresAt);
+    const tier = isPremium ? "vip" : "normal";
+    const resetIntervalHours = isPremium ? limit.vipResetIntervalHours : limit.normalResetIntervalHours;
+    const window = usageWindowHours(resetIntervalHours);
+    const usageCount = (user.featureUsageWindows?.[featureName]?.[tier]?.aiDaily?.[window.key] as number | undefined) || 0;
+
+    if (!canUseFeature(featureId, isPremium, usageCount, limit)) {
+      return { kind: "rejected" as const, isPremium, resetIntervalHours, window };
+    }
+
+    // Reserve the allowance before any provider call. Firestore serializes
+    // concurrent requests for the same user document, so only one request
+    // can reserve a one-use quota window.
+    tx.set(
+      userRef,
+      { [`featureUsageWindows.${featureName}.${tier}.aiDaily.${window.key}`]: FieldValue.increment(1) },
+      { merge: true }
+    );
+    return { kind: "reserved" as const, isPremium, usageCount, window };
+  });
+
+  if (reservation.kind === "missing") {
+    return { ok: false, response: NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 }) };
+  }
+  if (reservation.kind === "rejected") {
     return {
       ok: false,
       response: NextResponse.json({
-        error: `وصلتِ إلى الحد المتاح لأداة ${featureName}. سيُعاد ضبطه تلقائيًا بعد ${resetIntervalHours} ساعة.`,
-        upgradeRequired: !isPremium,
+        error: `وصلتِ إلى الحد المتاح لأداة ${featureName}. سيُعاد ضبطه تلقائيًا بعد ${reservation.resetIntervalHours} ساعة.`,
+        upgradeRequired: !reservation.isPremium,
         limitReached: true,
         featureName,
-        resetAt: window.resetAt,
+        resetAt: reservation.window.resetAt,
       }, { status: 403 }),
     };
   }
 
-  return { ok: true, uid: session.uid, userRef, isPremium, usageCount, limit };
+  return { ok: true, uid: session.uid, userRef, isPremium: reservation.isPremium, usageCount: reservation.usageCount, limit };
 }
 
 /** Records a successful call in the current tier-specific time window. */
@@ -81,14 +96,6 @@ export async function recordFeatureUse(
     ? (limit?.vipResetIntervalHours ?? defaultResetIntervalHours(featureId, true))
     : (limit?.normalResetIntervalHours ?? defaultResetIntervalHours(featureId, false));
   const window = usageWindowHours(resetIntervalHours);
-  const tier = isPremium ? "vip" : "normal";
-
-  await userRef.set(
-    {
-      [`featureUsageWindows.${featureName}.${tier}.aiDaily.${window.key}`]: FieldValue.increment(1),
-    },
-    { merge: true }
-  );
 
   return {
     isPremium,
