@@ -55,6 +55,24 @@ export async function checkFeatureGate(
   const window = usageWindow(isPremium ? limit.vipPeriodDays : limit.normalPeriodDays);
   const usageCount = (user.featureUsageWindows?.[tier]?.[featureId]?.[window.key] as number | undefined) || 0;
 
+  // Free AI access is a shared daily allowance, not one allowance per
+  // endpoint. This prevents switching between chat, analysis, planner, and
+  // scanners from bypassing the product's one-free-use-per-day policy.
+  const globalDailyKey = usageWindow(1).key;
+  const globalDailyUsage = (user.featureUsageWindows?.normal?.aiDaily?.[globalDailyKey] as number | undefined) || 0;
+  if (!isPremium && globalDailyUsage >= 1) {
+    const globalWindow = usageWindow(1);
+    return {
+      ok: false,
+      response: NextResponse.json({
+        error: "استخدمتِ رصيد الذكاء الاصطناعي المجاني اليوم. اشتركي للوصول إلى استخدامات أكثر، أو عودي غدًا.",
+        upgradeRequired: true,
+        limitReached: true,
+        resetAt: globalWindow.resetAt,
+      }, { status: 429 }),
+    };
+  }
+
   if (!canUseFeature(featureId, isPremium, usageCount, limit)) {
     const periodDays = isPremium ? limit.vipPeriodDays : limit.normalPeriodDays;
     return {
@@ -86,7 +104,12 @@ export async function recordFeatureUse(
   const tier = isPremium ? "vip" : "normal";
 
   await userRef.set(
-    { [`featureUsageWindows.${tier}.${featureId}.${window.key}`]: FieldValue.increment(1) },
+    {
+      [`featureUsageWindows.${tier}.${featureId}.${window.key}`]: FieldValue.increment(1),
+      ...(!isPremium
+        ? { [`featureUsageWindows.normal.aiDaily.${usageWindow(1).key}`]: FieldValue.increment(1) }
+        : {}),
+    },
     { merge: true }
   );
 

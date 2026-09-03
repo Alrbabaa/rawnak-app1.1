@@ -103,7 +103,7 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            المستخدم العادي لديه استخدام واحد يوميًا لكل ميزة ذكاء اصطناعي. يمكن التحكم بعدد استخدامات VIP من هنا، وتُعاد الحدود تلقائيًا كل يوم عند بداية اليوم الجديد.
+            المستخدم العادي لديه استخدام واحد يوميًا مشترك بين جميع أدوات الذكاء الاصطناعي. يمكن التحكم بحدود VIP من هنا، وتُعاد الحصة المجانية تلقائيًا كل يوم.
           </p>
           <div className="space-y-2">
             {(Object.keys(FEATURE_LIMITS) as FeatureId[]).map((featureId) => (
