@@ -48,8 +48,7 @@ export interface FeatureLimit {
 }
 
 export function defaultPeriodDays(featureId: FeatureId, isPremium: boolean): number {
-  if (featureId === "aiChat") return 2;
-  return isPremium ? 7 : featureId === "skinAnalysis" ? 1 : 3;
+  return isPremium ? 7 : 1;
 }
 
 export function defaultAiLimits(): Record<FeatureId, FeatureLimit> {

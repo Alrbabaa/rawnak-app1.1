@@ -42,14 +42,9 @@ export async function checkFeatureGate(
   const limit: FeatureLimit = {
     freeUses: Number.isInteger(configured?.freeUses) && configured!.freeUses! >= 0 ? configured!.freeUses! : defaults.freeUses,
     vipMonthlyCap: Number.isInteger(configured?.vipMonthlyCap) && configured!.vipMonthlyCap! >= 0 ? configured!.vipMonthlyCap! : defaults.vipMonthlyCap,
-    // Skin analysis is deliberately a daily free allowance. Keep this
-    // invariant even if an older admin setting still stores the previous
-    // multi-day period in Firestore.
-    normalPeriodDays: featureId === "skinAnalysis"
-      ? 1
-      : Number.isInteger(configured?.normalPeriodDays) && configured!.normalPeriodDays! > 0
-      ? configured!.normalPeriodDays!
-      : defaultPeriodDays(featureId, false),
+    // All free AI features have one daily allowance. Keep this invariant
+    // even if an older admin setting stores a longer period in Firestore.
+    normalPeriodDays: 1,
     vipPeriodDays: Number.isInteger(configured?.vipPeriodDays) && configured!.vipPeriodDays! > 0 ? configured!.vipPeriodDays! : defaultPeriodDays(featureId, true),
   };
 

@@ -103,7 +103,7 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            حد الاستخدام يُطبّق داخل الدورة المحددة لكل فئة. الافتراضي 3 أيام للعادي و7 أيام لـ VIP، والدردشة كل يومين. القيمة 0 توقف الميزة لهذه الفئة.
+            المستخدم العادي لديه استخدام واحد يوميًا لكل ميزة ذكاء اصطناعي. يمكن التحكم بعدد استخدامات VIP من هنا، وتُعاد الحدود تلقائيًا حسب الدورة المحددة.
           </p>
           <div className="space-y-2">
             {(Object.keys(FEATURE_LIMITS) as FeatureId[]).map((featureId) => (
