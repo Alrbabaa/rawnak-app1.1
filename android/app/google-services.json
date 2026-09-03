@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "478008831293",
+    "project_id": "rawnak-c504e",
+    "storage_bucket": "rawnak-c504e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478008831293:android:80850dd6a80b1261942954",
+        "android_client_info": {
+          "package_name": "com.rawnakapp.www.twa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "478008831293-9gfi75n0qq32c62lbbvfc38l31tm1c6q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rawnakapp.www.twa",
+            "certificate_hash": "cb06e919231f7b5db13babeeb86aef5e73a05fa6"
+          }
+        },
+        {
+          "client_id": "478008831293-cfq87b3jc2kahgb2e7h4e9dsl1pa9098.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYHRZbOvcDQyWwfdH9tOvGnGk8iCzqvy0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "478008831293-cfq87b3jc2kahgb2e7h4e9dsl1pa9098.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
