@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const aiLimits = Object.fromEntries(
     (Object.keys(FEATURE_LIMITS) as FeatureId[]).map((featureId) => [
       featureId,
-      { ...DEFAULTS.aiLimits[featureId], ...(storedLimits[featureId] || {}), normalPeriodDays: 1 },
+      { ...DEFAULTS.aiLimits[featureId], ...(storedLimits[featureId] || {}), freeUses: 1, normalPeriodDays: 1 },
     ])
   );
   return NextResponse.json({ settings: {
@@ -61,7 +61,7 @@ export async function PUT(req: NextRequest) {
       for (const featureId of Object.keys(FEATURE_LIMITS) as FeatureId[]) {
         const value = body.aiLimits[featureId];
         aiLimits[featureId] = {
-          freeUses: Math.max(0, Math.min(10000, Math.floor(Number(value?.freeUses) || 0))),
+          freeUses: 1,
           vipMonthlyCap: Math.max(0, Math.min(10000, Math.floor(Number(value?.vipMonthlyCap) || 0))),
           normalPeriodDays: 1,
           vipPeriodDays: Math.max(1, Math.min(365, Math.floor(Number(value?.vipPeriodDays) || 1))),

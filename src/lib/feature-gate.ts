@@ -40,7 +40,10 @@ export async function checkFeatureGate(
   const configured = settingsSnap.data()?.aiLimits?.[featureId] as Partial<FeatureLimit> | undefined;
   const defaults = FEATURE_LIMITS[featureId];
   const limit: FeatureLimit = {
-    freeUses: Number.isInteger(configured?.freeUses) && configured!.freeUses! >= 0 ? configured!.freeUses! : defaults.freeUses,
+    // The normal tier is intentionally one use per day for every AI
+    // feature. Do not allow legacy or editable Firestore values to raise
+    // this limit above the product policy.
+    freeUses: 1,
     vipMonthlyCap: Number.isInteger(configured?.vipMonthlyCap) && configured!.vipMonthlyCap! >= 0 ? configured!.vipMonthlyCap! : defaults.vipMonthlyCap,
     // All free AI features have one daily allowance. Keep this invariant
     // even if an older admin setting stores a longer period in Firestore.
