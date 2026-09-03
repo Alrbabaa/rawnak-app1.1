@@ -48,8 +48,20 @@ export async function checkFeatureGate(
     const resetIntervalHours = isPremium ? limit.vipResetIntervalHours : limit.normalResetIntervalHours;
     const window = usageWindowHours(resetIntervalHours);
     const usageCount = (user.featureUsageWindows?.[featureName]?.[tier]?.aiDaily?.[window.key] as number | undefined) || 0;
+    const quotaPath = `users/${session.uid}/featureUsageWindows/${featureName}/${tier}/aiDaily/${window.key}`;
 
     if (!canUseFeature(featureId, isPremium, usageCount, limit)) {
+      console.info("[quota] denied", {
+        uid: session.uid,
+        featureId,
+        featureName,
+        tier,
+        usageCount,
+        limit: isPremium ? limit.vipMonthlyCap : limit.freeUses,
+        resetIntervalHours,
+        windowKey: window.key,
+        quotaPath,
+      });
       return { kind: "rejected" as const, isPremium, resetIntervalHours, window };
     }
 
@@ -61,6 +73,17 @@ export async function checkFeatureGate(
       { [`featureUsageWindows.${featureName}.${tier}.aiDaily.${window.key}`]: FieldValue.increment(1) },
       { merge: true }
     );
+    console.info("[quota] reserved", {
+      uid: session.uid,
+      featureId,
+      featureName,
+      tier,
+      usageBefore: usageCount,
+      usageAfter: usageCount + 1,
+      resetIntervalHours,
+      windowKey: window.key,
+      quotaPath,
+    });
     return { kind: "reserved" as const, isPremium, usageCount, window };
   });
 
@@ -72,6 +95,7 @@ export async function checkFeatureGate(
       ok: false,
       response: NextResponse.json({
         error: `وصلتِ إلى الحد المتاح لأداة ${featureName}. سيُعاد ضبطه تلقائيًا بعد ${reservation.resetIntervalHours} ساعة.`,
+        code: "QUOTA_EXCEEDED",
         upgradeRequired: !reservation.isPremium,
         limitReached: true,
         featureName,
