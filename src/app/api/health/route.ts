@@ -7,6 +7,7 @@ export function GET() {
     ok: true,
     service: "rawnak-api",
     quotaPolicy: "shared-daily-v1",
+    firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "config-fallback",
     deployment: process.env.VERCEL_GIT_COMMIT_SHA || "local",
   });
 }
