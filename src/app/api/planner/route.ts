@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiService } from "@/lib/ai/service";
 import { checkAiRateLimit } from "@/lib/rate-limit";
+import { checkFeatureGate, recordFeatureUse } from "@/lib/feature-gate";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -54,6 +55,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const gate = await checkFeatureGate(req, "planner");
+    if (!gate.ok) return gate.response;
+
     const body = (await req.json()) as ReqBody;
     const {
       occasion,
@@ -87,7 +91,9 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(parsed.tips)) parsed.tips = [];
     if (!parsed.duration) parsed.duration = "30-45 دقيقة";
 
-    return NextResponse.json(parsed);
+    const usage = await recordFeatureUse(gate.userRef, "planner", gate.usageCount, gate.isPremium, gate.limit);
+
+    return NextResponse.json({ ...parsed, usage });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "خطأ غير معروف";
     console.error("[planner] error:", msg);

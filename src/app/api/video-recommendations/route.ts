@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiService } from "@/lib/ai/service";
 import { checkAiRateLimit } from "@/lib/rate-limit";
+import { checkFeatureGate, recordFeatureUse } from "@/lib/feature-gate";
 import { BEAUTY_VIDEOS } from "@/lib/data";
 
 export const runtime = "nodejs";
@@ -45,6 +46,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const gate = await checkFeatureGate(req, "videoRecommendations");
+    if (!gate.ok) return gate.response;
+
     const body = (await req.json()) as ReqBody;
     const { skinType, concerns, goals, watchedIds } = body;
 
@@ -81,7 +85,15 @@ ${videoList || "لا توجد فيديوهات متاحة"}`;
       .filter((id) => BEAUTY_VIDEOS.some((v) => v.id === id))
       .slice(0, 3);
 
-    return NextResponse.json(parsed);
+    const usage = await recordFeatureUse(
+      gate.userRef,
+      "videoRecommendations",
+      gate.usageCount,
+      gate.isPremium,
+      gate.limit
+    );
+
+    return NextResponse.json({ ...parsed, usage });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "خطأ غير معروف";
     console.error("[video-recommendations] error:", msg);

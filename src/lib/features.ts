@@ -31,6 +31,9 @@ export const FEATURE_LIMITS = {
   productScan: { freeUses: 1, vipMonthlyCap: 60, label: "مسح المنتج بالذكاء الاصطناعي" },
   nutritionTips: { freeUses: 1, vipMonthlyCap: 60, label: "نصائح التغذية بالذكاء الاصطناعي" },
   recommendations: { freeUses: 1, vipMonthlyCap: 60, label: "التوصيات الذكية" },
+  planner: { freeUses: 1, vipMonthlyCap: 60, label: "مخطط المناسبات بالذكاء الاصطناعي" },
+  weatherTips: { freeUses: 1, vipMonthlyCap: 60, label: "نصائح الطقس بالذكاء الاصطناعي" },
+  videoRecommendations: { freeUses: 1, vipMonthlyCap: 60, label: "توصيات الفيديو بالذكاء الاصطناعي" },
   // Every AI feature now follows the same one-trial-then-VIP rule, incl.
   // this one (previously zero free uses). The "build my routine" button
   // in cabinet-screen.tsx was never client-gated by hasVipAccess to begin

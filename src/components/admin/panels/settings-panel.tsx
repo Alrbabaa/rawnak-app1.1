@@ -103,7 +103,7 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            المستخدم العادي لديه استخدام واحد يوميًا لكل ميزة ذكاء اصطناعي. يمكن التحكم بعدد استخدامات VIP من هنا، وتُعاد الحدود تلقائيًا حسب الدورة المحددة.
+            المستخدم العادي لديه استخدام واحد يوميًا لكل ميزة ذكاء اصطناعي. يمكن التحكم بعدد استخدامات VIP من هنا، وتُعاد الحدود تلقائيًا كل يوم عند بداية اليوم الجديد.
           </p>
           <div className="space-y-2">
             {(Object.keys(FEATURE_LIMITS) as FeatureId[]).map((featureId) => (
@@ -128,20 +128,13 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">دورة العادي (أيام)</Label>
+                  <Label className="text-[11px]">دورة العادي (يوميًا)</Label>
                   <Input
                     type="number"
                     min={1}
                     max={365}
                     value={settings.aiLimits[featureId].normalPeriodDays}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      aiLimits: {
-                        ...settings.aiLimits,
-                        [featureId]: { ...settings.aiLimits[featureId], normalPeriodDays: Number(e.target.value) },
-                      },
-                    })}
-                    disabled={!canEdit}
+                    disabled
                     className="rounded-xl"
                   />
                 </div>
