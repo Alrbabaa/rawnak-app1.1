@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     freeDailyLimit: 1,
     usage,
     resetAt: window.resetAt,
-    quotaPolicy: "shared-daily-v1",
+    quotaPolicy: "per-feature-v1",
     deployment: process.env.VERCEL_GIT_COMMIT_SHA || "local",
   });
 }
