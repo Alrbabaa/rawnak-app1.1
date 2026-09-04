@@ -110,12 +110,12 @@ export function OnboardingFlow() {
     <div className="fixed inset-0 overflow-y-auto bg-background">
       <div className="min-h-screen flex flex-col">
         {/* Progress header */}
-        <div className="px-5 pt-6 pb-2">
-          <div className="flex items-center justify-between mb-3">
+        <div className="px-5 pt-4 pb-3 border-b border-border/60">
+          <div className="flex h-10 items-center justify-between mb-3">
             <img
               src="/rawnak-logo.jpg"
               alt="رَونق"
-              className="w-8 h-8 rounded-lg object-cover"
+              className="w-9 h-9 rounded-xl object-cover shadow-sm"
             />
             <span className="text-xs text-muted-foreground">
               {step + 1} / {STEPS.length}
@@ -356,7 +356,10 @@ export function OnboardingFlow() {
         </div>
 
         {/* Navigation buttons */}
-        <div className="px-5 py-4 pb-8 flex gap-3">
+        <div
+          className="px-5 pt-3 flex gap-3"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+        >
           {step > 0 && (
             <Button
               onClick={back}
