@@ -12,6 +12,7 @@ import { useNativeStatusBar } from "@/hooks/use-native-status-bar";
 import { useDeepLinks } from "@/hooks/use-deep-links";
 import { useReferralQueryParam } from "@/hooks/use-referral-query-param";
 import { useFirebaseAuthListener } from "@/hooks/use-firebase-auth";
+import { useSubscription } from "@/hooks/use-subscription";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen as NativeSplashScreen } from "@capacitor/splash-screen";
 
@@ -43,6 +44,9 @@ export default function Home() {
   // (IndexedDB, survives reloads) — this listens for that state instead of
   // a fetch-based session check. Guests never touch Firebase at all.
   useFirebaseAuthListener();
+  // Keep RevenueCat entitlement state synchronized even while the user is
+  // on auth, onboarding, or another app screen.
+  useSubscription();
 
   // Reveal the locally-bundled app only once both the React frame is ready
   // AND critical init (Firebase auth restoration) has settled. The native

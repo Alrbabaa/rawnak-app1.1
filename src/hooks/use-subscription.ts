@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
+import { App } from "@capacitor/app";
 import { Purchases, LOG_LEVEL, PURCHASES_ERROR_CODE, type PurchasesOffering } from "@revenuecat/purchases-capacitor";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { useAppStore } from "@/lib/store";
 import { useVipAccessStatus } from "@/hooks/use-vip-access";
+
+const VIP_ENTITLEMENT_ID = "vip";
 
 /**
  * RevenueCat client-side integration — NATIVE ONLY (iOS/Android via
@@ -42,6 +45,28 @@ import { useVipAccessStatus } from "@/hooks/use-vip-access";
 
 let sdkConfigured = false; // true once Purchases.configure() has run this process — must only ever happen once
 let identifiedUid: string | null = null; // whichever Firebase uid RevenueCat is CURRENTLY logged in as; null = anonymous
+
+function syncCustomerInfo(customerInfo: { entitlements?: { active?: Record<string, { expirationDate?: string | null; productIdentifier?: string }> } }) {
+  const entitlement = customerInfo.entitlements?.active?.[VIP_ENTITLEMENT_ID];
+  const expiresAt = entitlement?.expirationDate ? Date.parse(entitlement.expirationDate) : null;
+  const profile = useAppStore.getState().profile;
+
+  useAppStore.setState({
+    subscriptionResolvedUid: identifiedUid,
+    profile: {
+      ...profile,
+      isPremium: !!entitlement,
+      subscriptionExpiresAt: Number.isFinite(expiresAt) ? expiresAt : null,
+      subscriptionProductId: entitlement?.productIdentifier ?? null,
+    },
+  });
+}
+
+async function refreshCustomerInfo() {
+  if (!sdkConfigured || !identifiedUid) return;
+  const { customerInfo } = await Purchases.getCustomerInfo();
+  syncCustomerInfo(customerInfo);
+}
 
 export function useSubscription() {
   const isAuthed = useAppStore((s) => s.isAuthed);
@@ -84,9 +109,11 @@ export function useSubscription() {
       }
 
       if (uid && identifiedUid !== uid) {
-        await Purchases.logIn({ appUserID: uid });
+        const result = await Purchases.logIn({ appUserID: uid });
         identifiedUid = uid;
         setReady(true);
+        syncCustomerInfo(result.customerInfo);
+        await refreshCustomerInfo();
       } else if (!uid && identifiedUid !== null) {
         // Signed out, or now a guest — revert to anonymous so nothing
         // afterward (e.g. a different person on a shared device) can ever
@@ -99,6 +126,36 @@ export function useSubscription() {
       console.error("[useSubscription] RevenueCat identity sync failed:", err);
     });
   }, [isNative, isAuthed, isGuest]);
+
+  useEffect(() => {
+    if (!isNative) return;
+
+    let cancelled = false;
+    let appStateListener: { remove: () => Promise<void> } | null = null;
+    const customerInfoListener = Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+      syncCustomerInfo(customerInfo);
+    });
+    const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) {
+        void refreshCustomerInfo().catch((err) => {
+          console.warn("[useSubscription] RevenueCat foreground refresh failed:", err);
+        });
+      }
+    });
+
+    void appStateListenerPromise.then((handle) => {
+      if (cancelled) void handle.remove();
+      else appStateListener = handle;
+    });
+
+    return () => {
+      cancelled = true;
+      void customerInfoListener.then((listenerId) =>
+        Purchases.removeCustomerInfoUpdateListener({ listenerToRemove: listenerId })
+      );
+      void appStateListener?.remove();
+    };
+  }, [isNative]);
 
   const fetchOfferings = useCallback(async () => {
     if (!isNative || !sdkConfigured || !ready) {
@@ -136,11 +193,9 @@ export function useSubscription() {
     setLoading(true);
     setError(null);
     try {
-      await Purchases.purchasePackage({ aPackage: pkg });
-      // Entitlement state itself arrives via the RevenueCat webhook →
-      // Firestore → the next db/sync fetch, not read directly from this
-      // purchase response, so the app's server-side billing truth and the
-      // client's UI state can never disagree.
+      const result = await Purchases.purchasePackage({ aPackage: pkg });
+      syncCustomerInfo(result.customerInfo);
+      await refreshCustomerInfo();
       return { ok: true };
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
@@ -156,7 +211,9 @@ export function useSubscription() {
     setLoading(true);
     setError(null);
     try {
-      await Purchases.restorePurchases();
+      const result = await Purchases.restorePurchases();
+      syncCustomerInfo(result.customerInfo);
+      await refreshCustomerInfo();
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : "فشلت استعادة المشتريات" };
