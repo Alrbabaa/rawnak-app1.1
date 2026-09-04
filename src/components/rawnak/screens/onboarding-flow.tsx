@@ -401,7 +401,8 @@ export function OnboardingFlow() {
         {step > 0 && step < STEPS.length - 1 && (
           <button
             onClick={finish}
-            className="w-full text-center text-xs text-muted-foreground py-3"
+            className="w-full text-center text-xs text-muted-foreground pt-3"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
           >
             تخطي، أكمل بياناتي لاحقًا
           </button>
