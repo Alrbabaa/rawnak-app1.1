@@ -116,7 +116,14 @@ export function SettingsPanel({ email, viewerRole }: SettingsPanelProps) {
                     min={0}
                     max={10000}
                     value={settings.aiLimits[featureId].freeUses}
-                    disabled
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      aiLimits: {
+                        ...settings.aiLimits,
+                        [featureId]: { ...settings.aiLimits[featureId], freeUses: Number(e.target.value) },
+                      },
+                    })}
+                    disabled={!canEdit}
                     className="rounded-xl"
                   />
                 </div>
