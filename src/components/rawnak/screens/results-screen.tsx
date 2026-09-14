@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { scoreLabel, glowCaption, scoreColorClass } from "@/lib/skin-score";
 import { useHasVipAccess } from "@/hooks/use-vip-access";
 import { generateGlowCard } from "@/lib/share/glow-card";
+import { referralShareLink } from "@/lib/referral";
 import { shareImage } from "@/lib/share/share-image";
 import { trackEvent } from "@/lib/track-event";
 
@@ -93,12 +94,15 @@ export function ResultsScreen() {
         overall: analysis.overall,
         skinType: analysis.skinType,
         imageData: profile.shareCardIncludePhoto ? analysis.imageData : null,
+        referralCode: profile.referralCode,
       });
       const result = await shareImage({
         blob,
         filename: `rawnak-glow-${Math.round(analysis.overall)}.png`,
         title: "توهجي مع رَونق ✦",
-        text: "جرّبي تحليل بشرتكِ المجاني على رَونق ✦ https://www.rawnakapp.com",
+        text: profile.referralCode
+          ? `جرّبي تحليل بشرتكِ المجاني على رَونق ✦ سجّلي بكودي "${profile.referralCode}" ${referralShareLink(profile.referralCode)}`
+          : "جرّبي تحليل بشرتكِ المجاني على رَونق ✦ https://www.rawnakapp.com",
       });
       if (result.fallback === "downloaded") {
         toast.success("تم حفظ البطاقة — شاركيها من معرض الصور ✦");

@@ -107,6 +107,7 @@ export function ProfileScreen() {
     logout,
     deleteAccount,
     updateProfile,
+    setDialect,
     selectedCurrency,
     selectedCountry,
     role,
@@ -747,7 +748,7 @@ export function ProfileScreen() {
                   <Select
                     value={profile.dialect || "msa"}
                     onValueChange={(id) => {
-                      updateProfile({ dialect: id as typeof profile.dialect });
+                      setDialect(id as typeof profile.dialect);
                       const label = DIALECTS.find((d) => d.id === id)?.label || id;
                       toast(`تم اختيار لهجة ${label}`);
                     }}

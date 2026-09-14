@@ -653,6 +653,12 @@ export interface AppState {
   setSelectedCurrency: (currencyCode: string) => void;
   setSelectedCountry: (countryName: string) => void;
   ensureCountryDetected: () => void;
+  // Same guard pattern as countryAutoDetected above, tracked separately
+  // because a person can pick her country without ever touching the
+  // dialect picker (or vice versa) — see setDialect()/ensureDialectDetected().
+  dialectAutoDetected: boolean;
+  setDialect: (id: UserProfile["dialect"]) => void;
+  ensureDialectDetected: () => void;
 }
 
 const DEFAULT_ROUTINE: RoutineStep[] = [
@@ -1146,15 +1152,26 @@ export const useAppStore = create<AppState>()(
 
       completeOnboarding: () =>
         set((s) => {
-          const cur = s.profile.dialect
-            ? s.profile
-            : { ...s.profile, dialect: detectDialectFromTimezone() };
+          // BUG FIX: this guard always took the "keep as-is" branch before —
+          // EMPTY_PROFILE.dialect defaults to "msa", which is truthy, so
+          // `s.profile.dialect ? ... : ...` never reached the auto-detect
+          // branch and every new user silently got Fusha regardless of
+          // where she actually is, even though detectDialectFromTimezone()
+          // was fully implemented and wired in. Onboarding is the one place
+          // this call runs, always on a still-fresh profile before she's
+          // ever reached the manual dialect picker in profile-screen.tsx,
+          // so "still the untouched default" is an accurate proxy for
+          // "never explicitly chosen" here.
+          const cur =
+            s.profile.dialect && s.profile.dialect !== "msa"
+              ? s.profile
+              : { ...s.profile, dialect: detectDialectFromTimezone() };
 
           // Same smart-default pattern as dialect above, for country/
           // currency — only applied once (countryAutoDetected guards
           // against ever overriding a later, explicit choice).
           if (s.countryAutoDetected) {
-            return { hasOnboarded: true, view: "home", profile: cur };
+            return { hasOnboarded: true, view: "home", profile: cur, dialectAutoDetected: true };
           }
           const detectedCountry = detectCountryFromTimezone();
           const detectedCurrency = getCurrencyForCountry(detectedCountry);
@@ -1163,6 +1180,7 @@ export const useAppStore = create<AppState>()(
             view: "home",
             profile: cur,
             countryAutoDetected: true,
+            dialectAutoDetected: true,
             selectedCountry: detectedCountry,
             selectedCurrency: detectedCurrency.code,
           };
@@ -1419,6 +1437,30 @@ export const useAppStore = create<AppState>()(
             selectedCurrency: detectedCurrency.code,
           };
         }),
+
+      dialectAutoDetected: false,
+      setDialect: (id) => set((s) => ({ profile: { ...s.profile, dialect: id }, dialectAutoDetected: true })),
+      ensureDialectDetected: () =>
+        set((s) => {
+          // Catch-up for every account created before the onboarding
+          // dialect-detection bug above was fixed (in practice: everyone
+          // who signed up before this — the ternary bug meant nobody ever
+          // actually got auto-detection, so this isn't an edge case, it's
+          // the common case). Same one-time-only guard as
+          // ensureCountryDetected, called from the same AppShell mount
+          // effect. Never overrides a dialect she picked herself — that
+          // path (setDialect) sets the guard flag too, and as a second
+          // safety net for accounts that predate dialectAutoDetected
+          // existing at all (so the flag alone can't tell "never touched"
+          // from "manually chosen"), this only ever changes an account
+          // still sitting on the untouched "msa" default.
+          if (s.dialectAutoDetected) return {};
+          if (s.profile.dialect !== "msa") return { dialectAutoDetected: true };
+          return {
+            dialectAutoDetected: true,
+            profile: { ...s.profile, dialect: detectDialectFromTimezone() },
+          };
+        }),
     }),
     {
       name: "rawnak-store",
@@ -1485,6 +1527,7 @@ export const useAppStore = create<AppState>()(
         selectedCurrency: s.selectedCurrency,
         selectedCountry: s.selectedCountry,
         countryAutoDetected: s.countryAutoDetected,
+        dialectAutoDetected: s.dialectAutoDetected,
       }),
     }
   )

@@ -116,6 +116,7 @@ export function AppShell() {
   const analyses = useAppStore((s) => s.analyses);
   const cabinet = useAppStore((s) => s.cabinet);
   const ensureCountryDetected = useAppStore((s) => s.ensureCountryDetected);
+  const ensureDialectDetected = useAppStore((s) => s.ensureDialectDetected);
   const routineProgress =
     routine.length > 0 ? Math.round((routine.filter((r) => r.done).length / routine.length) * 100) : 0;
   const guestAuthRequired = isGuest && ["chat", "analysis", "scanner", "cabinet-scan"].includes(view);
@@ -148,6 +149,14 @@ export function AppShell() {
   useEffect(() => {
     ensureCountryDetected();
   }, [ensureCountryDetected]);
+
+  // Same one-time catch-up, for chat dialect — see the bug-fix note on
+  // completeOnboarding()/ensureDialectDetected() in store.ts. Runs for
+  // every account created before that fix, which in practice was every
+  // account, since the auto-detect branch was unreachable until now.
+  useEffect(() => {
+    ensureDialectDetected();
+  }, [ensureDialectDetected]);
 
   // Register service worker for offline caching of Beauty Academy and assets
   useEffect(() => {

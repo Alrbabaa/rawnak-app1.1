@@ -9,6 +9,13 @@ export interface GlowCardInput {
   // in store.ts, defaults to false/privacy mode) — this function never
   // decides that on its own.
   imageData?: string | null;
+  // Her own referral code (profile.referralCode) — when present, the CTA
+  // footer shows her personal invite link instead of the bare domain, so
+  // a skin-analysis share (by far the most common share moment — people
+  // share a good score far more readily than they visit the dedicated
+  // invite screen) actually feeds the existing referral/VIP-trial reward
+  // loop instead of being pure unattributed brand awareness.
+  referralCode?: string | null;
 }
 
 // Portrait 9:16 — the native size for Instagram/Snapchat/WhatsApp Stories,
@@ -79,7 +86,7 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
  * per the same review that recommended this feature), just the score,
  * skin type, and a branded invite back to the app.
  */
-export async function generateGlowCard({ overall, skinType, imageData }: GlowCardInput): Promise<Blob> {
+export async function generateGlowCard({ overall, skinType, imageData, referralCode }: GlowCardInput): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
@@ -250,7 +257,18 @@ export async function generateGlowCard({ overall, skinType, imageData }: GlowCar
     "700 40px Cairo, sans-serif",
     "#ffffff"
   );
-  centerText(ctx, "www.rawnakapp.com", WIDTH / 2, HEIGHT - 110, "500 32px Cairo, sans-serif", "rgba(255,255,255,0.6)");
+  // Personal invite code when available — this is the actual growth loop
+  // (referralInvitesCount / VIP trial reward in referral.ts), not just
+  // brand awareness. Falls back to the bare domain for guests/whoever has
+  // no code yet, so the card still works standalone.
+  centerText(
+    ctx,
+    referralCode ? `www.rawnakapp.com — كودكِ: ${referralCode}` : "www.rawnakapp.com",
+    WIDTH / 2,
+    HEIGHT - 110,
+    "500 32px Cairo, sans-serif",
+    "rgba(255,255,255,0.6)"
+  );
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))), "image/png", 0.95);
