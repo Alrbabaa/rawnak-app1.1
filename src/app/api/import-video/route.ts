@@ -2,40 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { aiService } from "@/lib/ai/service";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { requireAdmin } from "@/lib/admin-auth";
+import { extractYouTubeId, isValidYouTubeId } from "@/lib/youtube";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 interface ReqBody {
   urlOrTopic: string;
-}
-
-function extractYouTubeId(str: string): string | null {
-  if (!str) return null;
-  const cleaned = str.trim();
-  
-  // Direct 11-char ID check
-  if (/^[a-zA-Z0-9_-]{11}$/.test(cleaned)) {
-    return cleaned;
-  }
-
-  // URL matching patterns
-  const patterns = [
-    (/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i),
-  ];
-
-  for (const pat of patterns) {
-    const match = cleaned.match(pat);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-
-  return null;
-}
-
-function isValidYouTubeId(id: string | null | undefined): id is string {
-  return !!id && /^[a-zA-Z0-9_-]{11}$/.test(id);
 }
 
 // Admin-only content-authoring helper — see import-article/route.ts for why

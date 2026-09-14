@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ProductsTabHeader } from "@/components/rawnak/products-tab-header";
 import { PRODUCT_DEPARTMENTS, categoriesForDepartment, type RecommendedProduct, type ProductDepartment } from "@/lib/data";
+import { isQuotaExceeded, describeQuotaError, type QuotaErrorPayload } from "@/lib/quota-error";
+import { buildPersonalizationContext } from "@/lib/personalization";
 
 type Product = RecommendedProduct;
 
@@ -25,10 +27,12 @@ const EMOJIS: Record<string, string> = {
 };
 
 export function ProductsScreen() {
-  const { profile, analyses, savedProducts, toggleSaveProduct, setView, goBack } = useAppStore();
+  const { profile, analyses, cabinet, routine, streak, plans, academyHistory, savedProducts, toggleSaveProduct, setView, goBack } =
+    useAppStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
+  const [quotaInfo, setQuotaInfo] = useState<QuotaErrorPayload | null>(null);
   const [activeDept, setActiveDept] = useState<ProductDepartment | "all">("all");
   const [activeCat, setActiveCat] = useState<string>("all");
 
@@ -49,11 +53,15 @@ export function ProductsScreen() {
             latestAnalysis: analyses[0]
               ? { overall: analyses[0].overall, skinType: analyses[0].skinType }
               : null,
+            context: buildPersonalizationContext({ profile, analyses, cabinet, routine, streak, plans, academyHistory }),
           }),
         });
         const d = await res.json();
         if (active && res.ok && d.products) setProducts(d.products);
-        if (active && !res.ok && d.upgradeRequired) setNeedsUpgrade(true);
+        if (active && !res.ok && (d.upgradeRequired || isQuotaExceeded(d))) {
+          setNeedsUpgrade(true);
+          if (isQuotaExceeded(d)) setQuotaInfo(d);
+        }
       } catch {
         // ignore
       } finally {
@@ -247,7 +255,9 @@ export function ProductsScreen() {
 
       {!loading && filteredProducts.length === 0 && needsUpgrade && (
         <div className="text-center py-12">
-          <p className="text-sm text-muted-foreground">استخدمتِ تجربتكِ المجانية من التوصيات الذكية ✦</p>
+          <p className="text-sm text-muted-foreground">
+            {quotaInfo ? describeQuotaError(quotaInfo) : "استخدمتِ تجربتكِ المجانية من التوصيات الذكية ✦"}
+          </p>
           <Button onClick={() => setView("vip")} className="mt-3 rounded-xl">
             الترقية إلى VIP
           </Button>

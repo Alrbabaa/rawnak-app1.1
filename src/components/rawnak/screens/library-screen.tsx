@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { isQuotaExceeded, describeQuotaError } from "@/lib/quota-error";
 
 type Tab = "ingredients" | "nutrition" | "weather";
 
@@ -367,7 +368,7 @@ function NutritionTab() {
 
 /* ---------- Weather ---------- */
 function WeatherTab() {
-  const { profile } = useAppStore();
+  const { profile, setView } = useAppStore();
   const [condition, setCondition] = useState("mild");
   const [data, setData] = useState<null | {
     summary: string;
@@ -384,13 +385,22 @@ function WeatherTab() {
     setData(null);
     setError(false);
     try {
-      const res = await fetch("/api/weather-tips", {
+      const res = await authedFetch("/api/weather-tips", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ condition: c, skinType: profile.skinType }),
       });
       const d = await res.json();
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        if (isQuotaExceeded(d)) {
+          setError(true);
+          toast.error(describeQuotaError(d), {
+            action: d.upgradeRequired ? { label: "عضوية VIP", onClick: () => setView("vip") } : undefined,
+          });
+          return;
+        }
+        throw new Error();
+      }
       setData(d);
     } catch {
       setError(true);

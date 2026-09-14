@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/hooks/use-speech";
 import { useRealWeather } from "@/hooks/use-real-weather";
+import { isQuotaExceeded, describeQuotaError } from "@/lib/quota-error";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -198,11 +199,13 @@ export function AiChat() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (data.upgradeRequired) {
+        if (isQuotaExceeded(data) || data.upgradeRequired) {
           addChatMessage({
             id: `a-${Date.now()}`,
             role: "assistant",
-            content: "استخدمتِ تجربتكِ المجانية من الدردشة معي ✦ رقّي لعضوية VIP لمتابعة المحادثة بلا حدود.",
+            content: isQuotaExceeded(data)
+              ? describeQuotaError(data)
+              : "استخدمتِ تجربتكِ المجانية من الدردشة معي ✦ رقّي لعضوية VIP لمتابعة المحادثة بلا حدود.",
             ts: Date.now(),
           });
           setView("vip");

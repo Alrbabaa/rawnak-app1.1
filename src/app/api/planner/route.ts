@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { aiService } from "@/lib/ai/service";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { checkFeatureGate, recordFeatureUse } from "@/lib/feature-gate";
+import {
+  formatPersonalizationContext,
+  type ServerPersonalizationContext,
+} from "@/lib/ai/personalization-context";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -9,12 +13,17 @@ export const maxDuration = 90;
 interface ReqBody {
   occasion: string; // wedding | university | meeting | travel | party | date
   occasionLabel?: string;
+  daysUntil?: number;
+  // Shared personalization context (profile, latest analysis, cabinet,
+  // routine, VIP, real weather) — see src/lib/personalization.ts. Older
+  // clients may still send the legacy flat fields below; both are
+  // supported so this route doesn't need a coordinated client release.
+  context?: ServerPersonalizationContext;
   skinType?: string | null;
   skinTone?: string | null;
   concerns?: string[];
   makeupLevel?: string | null;
   cabinetProducts?: string[]; // names of owned products
-  daysUntil?: number;
 }
 
 const SKIN_TYPE_AR: Record<string, string> = {
@@ -59,30 +68,35 @@ export async function POST(req: NextRequest) {
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
-    const {
-      occasion,
-      occasionLabel,
-      skinType,
-      skinTone,
-      concerns,
-      makeupLevel,
-      cabinetProducts,
-      daysUntil,
-    } = body;
+    const { occasion, occasionLabel, daysUntil, context, skinType, skinTone, concerns, makeupLevel, cabinetProducts } =
+      body;
 
-    const lines: string[] = [
+    const occasionLine = [
       `المناسبة: ${occasionLabel || occasion}`,
       daysUntil ? `بعد ${daysUntil} يوم` : "",
-      skinType ? `نوع البشرة: ${SKIN_TYPE_AR[skinType] || skinType}` : "",
-      skinTone ? `لون البشرة: ${skinTone}` : "",
-      concerns?.length ? `المشاكل: ${concerns.join("، ")}` : "",
-      makeupLevel ? `مستوى المكياج: ${makeupLevel}` : "",
-      cabinetProducts?.length
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    // Occasion is handled explicitly above (occasionLabel/daysUntil), so
+    // skip re-stating it from context to avoid duplicating the same line.
+    const personalizedBlock = context
+      ? formatPersonalizationContext(context, { upcomingOccasion: false })
+      : "";
+
+    // Legacy fallback for clients that haven't upgraded to the shared
+    // context yet — kept minimal, matches the old prompt shape exactly.
+    const legacyLines = [
+      !context && skinType ? `نوع البشرة: ${SKIN_TYPE_AR[skinType] || skinType}` : "",
+      !context && skinTone ? `لون البشرة: ${skinTone}` : "",
+      !context && concerns?.length ? `المشاكل: ${concerns.join("، ")}` : "",
+      !context && makeupLevel ? `مستوى المكياج: ${makeupLevel}` : "",
+      !context && cabinetProducts?.length
         ? `منتجات تملكها المستخدمة (استخدميها في الخطة): ${cabinetProducts.join("، ")}`
         : "",
     ].filter(Boolean);
 
-    const ctx = lines.join("\n");
+    const ctx = [occasionLine, personalizedBlock, ...legacyLines].filter(Boolean).join("\n\n");
 
     const parsed = await aiService.chatJson<PlannerResult>(PROMPT, ctx);
 

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev -p 3000 -H 0.0.0.0",
-    "build": "node -e \"const fs=require('fs'); fs.rmSync('public/_next',{recursive:true,force:true});\" && next build && node -e \"const fs=require('fs'); fs.cpSync('.next/static','public/_next/static',{recursive:true,force:true}); if(fs.existsSync('.next/standalone')){fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true,force:true}); fs.cpSync('public','.next/standalone/public',{recursive:true,force:true});}\"",
+    "build": "node -e \"const fs=require('fs'); fs.rmSync('public/_next',{recursive:true,force:true}); fs.rmSync('public/index.html',{force:true});\" && next build && node -e \"const fs=require('fs'); fs.cpSync('.next/server/app/index.html','public/index.html'); fs.cpSync('.next/static','public/_next/static',{recursive:true,force:true}); if(fs.existsSync('.next/standalone')){fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true,force:true}); fs.cpSync('public','.next/standalone/public',{recursive:true,force:true});}\"",
     "start": "NODE_ENV=production node .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint ."
   },

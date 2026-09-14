@@ -40,6 +40,7 @@ import {
   Star,
   Heart,
   X,
+  ScanFace,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SkinProgressChart } from "@/components/rawnak/skin-progress-chart";
@@ -49,6 +50,7 @@ import { RoutineCompletionCelebration } from "@/components/rawnak/confetti-celeb
 import { SkincareStreakIndicator } from "@/components/rawnak/skincare-streak-indicator";
 import { PartnerDiscountCardsSection } from "@/components/rawnak/partner-discount-cards";
 import { useHasVipAccess } from "@/hooks/use-vip-access";
+import { RawnakTodayCard } from "@/components/rawnak/rawnak-today-card";
 
 export function HomeDashboard() {
   const {
@@ -218,6 +220,13 @@ export function HomeDashboard() {
           </div>
         </div>
       </motion.div>
+
+      {/* Rawnak Today — personalized daily brief, built from whatever real
+          context she has (profile, latest analysis, cabinet, routine, an
+          upcoming occasion, today's real weather). Fails quiet if it has
+          nothing useful to say, so it never crowds out the CTA/quick
+          actions below for a brand-new user. */}
+      <RawnakTodayCard weather={weatherStatus === "ready" ? weather : null} />
 
       {/* First-run primary CTA — a brand-new user with zero analyses has no
           way to know which of the 6 quick actions below matters most, so
@@ -699,6 +708,27 @@ export function HomeDashboard() {
         </motion.button>
       )}
 
+      {/* VIP hub — real entry points into the tools her membership actually
+          unlocks generous usage on, instead of the home screen just
+          showing a "VIP member" badge and nothing else changing. */}
+      {hasVipAccess && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Card className="relative overflow-hidden p-4 rounded-2xl border-amber-400/30 rawnak-rosegold-gradient space-y-3">
+            <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/20 blur-2xl" />
+            <div className="relative z-10 flex items-center gap-2">
+              <Crown className="w-4 h-4 text-black" />
+              <p className="font-extrabold text-black text-sm">أدواتكِ الذكية بلا حدود تقريبًا اليوم ✦</p>
+            </div>
+            <div className="relative z-10 grid grid-cols-2 gap-2">
+              <VipQuickAction icon={<Sparkles className="w-4 h-4" />} label="استشارة الخبيرة" onClick={() => setView("chat")} />
+              <VipQuickAction icon={<ScanFace className="w-4 h-4" />} label="تحليل بشرة جديد" onClick={() => setView("analysis")} />
+              <VipQuickAction icon={<CalendarHeart className="w-4 h-4" />} label="خطّطي لمناسبة" onClick={() => setView("planner")} />
+              <VipQuickAction icon={<Droplets className="w-4 h-4" />} label="خزانتكِ" onClick={() => setView("cabinet-scan")} />
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Motivational footer */}
       <div className="text-center py-4">
         <p className="text-sm text-muted-foreground">
@@ -706,6 +736,26 @@ export function HomeDashboard() {
         </p>
       </div>
     </div>
+  );
+}
+
+function VipQuickAction({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="relative z-10 flex items-center gap-2 bg-white/50 dark:bg-black/25 rounded-xl px-3 py-2.5 text-right hover:bg-white/70 dark:hover:bg-black/35 transition-colors"
+    >
+      <span className="text-black shrink-0">{icon}</span>
+      <span className="text-xs font-bold text-black">{label}</span>
+    </button>
   );
 }
 

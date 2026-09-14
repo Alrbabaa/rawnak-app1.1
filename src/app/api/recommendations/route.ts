@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { aiService } from "@/lib/ai/service";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { checkFeatureGate, recordFeatureUse } from "@/lib/feature-gate";
+import {
+  formatPersonalizationContext,
+  type ServerPersonalizationContext,
+} from "@/lib/ai/personalization-context";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -18,6 +22,11 @@ interface ReqBody {
     skinType?: string;
     metrics?: Record<string, number>;
   } | null;
+  // Shared personalization context — adds cabinet (so the AI can avoid
+  // recommending duplicates of what she already owns), routine, and VIP
+  // depth on top of the legacy profile/latestAnalysis fields above, which
+  // stay supported for older clients.
+  context?: ServerPersonalizationContext;
 }
 
 const SKIN_TYPE_AR: Record<string, string> = {
@@ -46,7 +55,7 @@ const PROMPT = `أنتِ خبيرة منتجات عناية بالبشرة. اق
   }
 ]
 
-اجعلي المنتجات واقعية ومعروفة عالميًا، مناسبة للبشرة المحددة. أرجعي JSON صالحًا فقط بدون أي نص إضافي.`;
+اجعلي المنتجات واقعية ومعروفة عالميًا، مناسبة للبشرة المحددة. إن ذُكرت منتجات تملكها المستخدمة بالفعل، لا تكرّري اقتراح نفس المنتج أو بديل مطابق له تمامًا. أرجعي JSON صالحًا فقط بدون أي نص إضافي.`;
 
 interface Product {
   id: string;
@@ -74,9 +83,9 @@ export async function POST(req: NextRequest) {
     if (!gate.ok) return gate.response;
 
     const body = (await req.json()) as ReqBody;
-    const { profile, latestAnalysis } = body;
+    const { profile, latestAnalysis, context } = body;
 
-    const ctx = `ملف المستخدمة:
+    const legacyBlock = `ملف المستخدمة:
 - نوع البشرة: ${profile.skinType ? SKIN_TYPE_AR[profile.skinType] || profile.skinType : "غير محدد"}
 - العمر: ${profile.age || "غير محدد"}
 - المشاكل: ${profile.concerns?.join("، ") || "غير محدد"}
@@ -86,6 +95,11 @@ ${
     ? `\nأحدث تحليل: النتيجة العامة ${latestAnalysis.overall}/100`
     : ""
 }`;
+
+    // Prefer the shared context (adds cabinet + routine + VIP depth) when
+    // sent; fall back to the legacy flat fields for older clients so this
+    // route doesn't require a coordinated release with every screen.
+    const ctx = context ? formatPersonalizationContext(context) : legacyBlock;
 
     const parsed = await aiService.chatJson<Product[]>(PROMPT, ctx);
 

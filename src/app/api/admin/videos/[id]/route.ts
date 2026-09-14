@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { requireAdmin } from "@/lib/admin-auth";
+import { normalizeYouTubeId } from "@/lib/youtube";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,19 @@ export async function PUT(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
     const data: Record<string, unknown> = {};
     if (patch.title !== undefined) data.title = patch.title;
-    if (patch.youtubeId !== undefined) data.youtubeId = patch.youtubeId;
+    if (patch.youtubeId !== undefined) {
+      // Same normalization as the create route — an edit may replace a
+      // clean ID with a freshly pasted full URL, so re-validate on every
+      // update rather than trusting the field is already a bare ID.
+      const normalizedYoutubeId = normalizeYouTubeId(patch.youtubeId);
+      if (!normalizedYoutubeId) {
+        return NextResponse.json(
+          { error: "معرّف يوتيوب غير صالح — تأكدي من الرابط أو المعرّف المُدخل" },
+          { status: 400 }
+        );
+      }
+      data.youtubeId = normalizedYoutubeId;
+    }
     if (patch.category !== undefined) data.category = patch.category;
     if (patch.channel !== undefined) data.channel = patch.channel;
     if (patch.duration !== undefined) data.duration = patch.duration;

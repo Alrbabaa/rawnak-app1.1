@@ -91,14 +91,21 @@ export async function checkFeatureGate(
     return { ok: false, response: NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 }) };
   }
   if (reservation.kind === "rejected") {
+    // Use the feature's real Arabic label (already defined once per
+    // feature in FEATURE_LIMITS) for anything human-facing — the
+    // `featureName` param is also the Firestore usage-window key, and for
+    // several routes that's a plain English/URL-ish slug ("planner",
+    // "weather-tips"), which used to leak straight into this Arabic
+    // sentence and into the client's quota message.
+    const humanLabel = defaults.label || featureName;
     return {
       ok: false,
       response: NextResponse.json({
-        error: `وصلتِ إلى الحد المتاح لأداة ${featureName}. سيُعاد ضبطه تلقائيًا بعد ${reservation.resetIntervalHours} ساعة.`,
+        error: `وصلتِ إلى الحد المتاح لأداة ${humanLabel}. سيُعاد ضبطه تلقائيًا بعد ${reservation.resetIntervalHours} ساعة.`,
         code: "QUOTA_EXCEEDED",
         upgradeRequired: !reservation.isPremium,
         limitReached: true,
-        featureName,
+        featureName: humanLabel,
         resetAt: reservation.window.resetAt,
       }, { status: 403 }),
     };

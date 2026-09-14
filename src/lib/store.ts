@@ -465,7 +465,7 @@ interface RoutineStep {
   done: boolean;
 }
 
-interface AppState {
+export interface AppState {
   /* navigation */
   view: View;
   viewHistory: View[];

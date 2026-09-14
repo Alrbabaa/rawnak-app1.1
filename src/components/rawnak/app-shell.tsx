@@ -13,6 +13,7 @@ import { WelcomeBackOverlay } from "./welcome-back-overlay";
 import { AppTourOverlay } from "./app-tour-overlay";
 import { ErrorBoundary } from "./error-boundary";
 import { Button } from "@/components/ui/button";
+import { RawnakTodayCard } from "./rawnak-today-card";
 
 // Skeleton loader for lazily fetched view components to improve perceived performance
 function ScreenSkeleton() {
@@ -103,6 +104,7 @@ import { useBuddyGuard } from "@/hooks/use-buddy-guard";
 import { useAnalysisReminder } from "@/hooks/use-analysis-reminder";
 import { useRepurchaseReminder } from "@/hooks/use-repurchase-reminder";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { useRealWeather } from "@/hooks/use-real-weather";
 
 export function AppShell() {
   const view = useAppStore((s) => s.view);
@@ -115,9 +117,10 @@ export function AppShell() {
   const analyses = useAppStore((s) => s.analyses);
   const cabinet = useAppStore((s) => s.cabinet);
   const ensureCountryDetected = useAppStore((s) => s.ensureCountryDetected);
+  const { weather } = useRealWeather();
   const routineProgress =
     routine.length > 0 ? Math.round((routine.filter((r) => r.done).length / routine.length) * 100) : 0;
-  const guestAuthRequired = isGuest && ["chat", "analysis", "scanner", "cabinet-scan"].includes(view);
+  const guestAuthRequired = isGuest && ["chat", "analysis", "scanner", "cabinet-scan", "planner"].includes(view);
   // Persist user data to Firestore (offline-first + server backup)
   useDbSync();
   // Real Android back button/gesture navigates the app's own screen stack
@@ -172,6 +175,7 @@ export function AppShell() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
       >
         <ErrorBoundary>
+          {!guestAuthRequired && view === "home" && <RawnakTodayCard weather={weather} />}
           {guestAuthRequired && (
             <div className="min-h-[60vh] grid place-items-center text-center px-6">
               <div className="space-y-4 max-w-sm">

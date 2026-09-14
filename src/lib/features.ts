@@ -40,6 +40,10 @@ export const FEATURE_LIMITS = {
   // with — only the server enforced it — so this change alone gives
   // everyone their first build for free with no UI edit needed.
   cabinetRoutine: { freeUses: 1, vipMonthlyCap: 60, label: "بناء روتين من الخزانة بالذكاء الاصطناعي" },
+  // Rawnak Today — the personalized daily brief on the home screen.
+  // Generous limits since it's meant to refresh naturally through the day,
+  // not feel like a one-shot "trial" feature.
+  rawnakToday: { freeUses: 3, vipMonthlyCap: 90, label: "رَونق اليوم" },
 } as const;
 
 export type FeatureId = keyof typeof FEATURE_LIMITS;

@@ -4,6 +4,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore, type BeautyPlan } from "@/lib/store";
 import { OCCASIONS } from "@/lib/data";
+import { authedFetch } from "@/lib/firebase/authed-fetch";
+import { buildPersonalizationContext } from "@/lib/personalization";
+import { useRealWeather } from "@/hooks/use-real-weather";
+import { isQuotaExceeded, describeQuotaError } from "@/lib/quota-error";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,30 +26,46 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function PlannerScreen() {
-  const { plans, addPlan, removePlan, profile, cabinet, setView, goBack } = useAppStore();
+  const { plans, addPlan, removePlan, profile, cabinet, analyses, routine, streak, academyHistory, setView, goBack } =
+    useAppStore();
   const [selected, setSelected] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const { status: weatherStatus, weather } = useRealWeather();
 
   const generate = async (occasionId: string) => {
     const occ = OCCASIONS.find((o) => o.id === occasionId);
     if (!occ) return;
     setGenerating(true);
     try {
-      const res = await fetch("/api/planner", {
+      // Shared personalization context (skin profile, latest analysis,
+      // cabinet, routine, VIP, today's real weather) — same builder that
+      // feeds Rawnak Today, so the plan reflects everything real we know
+      // about her, not just the four fields this screen used to send.
+      const context = buildPersonalizationContext(
+        { profile, analyses, cabinet, routine, streak, plans, academyHistory },
+        { weather: weatherStatus === "ready" ? weather : null }
+      );
+      const res = await authedFetch("/api/planner", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           occasion: occ.id,
           occasionLabel: occ.label,
-          skinType: profile.skinType,
-          skinTone: profile.skinTone,
-          concerns: profile.concerns,
-          makeupLevel: profile.makeupLevel,
-          cabinetProducts: cabinet.map((c) => c.name).slice(0, 20),
+          context,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "خطأ");
+      if (!res.ok) {
+        if (isQuotaExceeded(data)) {
+          toast.error(describeQuotaError(data), {
+            action: data.upgradeRequired
+              ? { label: "عضوية VIP", onClick: () => setView("vip") }
+              : undefined,
+          });
+          return;
+        }
+        throw new Error(data.error || "خطأ");
+      }
 
       const plan: BeautyPlan = {
         id: `plan-${Date.now()}`,
