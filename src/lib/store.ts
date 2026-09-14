@@ -297,6 +297,11 @@ export interface UserProfile {
   // along with every /api/chat request (same non-synced pattern as
   // personalityMode: no server storage, no db/sync involvement).
   dialect: DialectId;
+  // Custom name for the AI beauty companion — VIP perk (client-local,
+  // cosmetic-only, same non-synced pattern as dialect/personalityMode).
+  // Enforced VIP-only server-side too (see /api/chat) so a modified client
+  // can't send it and have it used for a non-VIP account.
+  companionName: string | null;
   country?: string; // e.g. "السعودية", "الأردن", "مصر", "الإمارات"
   currency?: string; // e.g. "SAR", "JOD", "EGP", "AED", "USD"
   // Share-card photo preference — client-local only (same non-synced
@@ -684,6 +689,7 @@ const EMPTY_PROFILE: UserProfile = {
   lifestyle: [],
   personalityMode: "professional",
   dialect: "msa",
+  companionName: null,
   shareCardIncludePhoto: false,
   remindersEnabled: false,
   isPremium: false,

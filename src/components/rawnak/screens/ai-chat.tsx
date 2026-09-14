@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { useAppStore } from "@/lib/store";
 import { authedFetch } from "@/lib/firebase/authed-fetch";
-import { Send, Sparkles, Trash2, User, Volume2, Square } from "lucide-react";
+import { Send, Sparkles, Trash2, User, Volume2, Square, Crown, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/hooks/use-speech";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { useRealWeather } from "@/hooks/use-real-weather";
 import { isQuotaExceeded, describeQuotaError } from "@/lib/quota-error";
+import { useHasVipAccess } from "@/hooks/use-vip-access";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,12 +42,14 @@ const SUGGESTIONS = [
 function companionGreeting(opts: {
   name: string;
   streak: number;
+  companionName?: string | null;
   lastAnalysis?: { overall: number; ts: number };
 }): { title: string; subtitle: string; suggestion?: string } {
   const hour = new Date().getHours();
   const timeGreeting =
     hour < 5 ? "سهرانة لحالكِ؟" : hour < 12 ? "صباح الخير" : hour < 18 ? "مساء النور" : "مساء الخير";
   const name = opts.name || "جميلتي";
+  const companionDisplayName = opts.companionName || "رَونق";
 
   const daysSinceAnalysis = opts.lastAnalysis
     ? Math.floor((Date.now() - opts.lastAnalysis.ts) / (24 * 60 * 60 * 1000))
@@ -72,8 +76,7 @@ function companionGreeting(opts: {
 
   return {
     title: `${timeGreeting}، ${name} ♡`,
-    subtitle:
-      "أنا رَونق، خبيرة الجمال الشخصية لديكِ. اسأليني أي شيء عن العناية ببشرتكِ، المكونات، الروتين، أو المكياج.",
+    subtitle: `أنا ${companionDisplayName}، خبيرة الجمال الشخصية لديكِ. اسأليني أي شيء عن العناية ببشرتكِ، المكونات، الروتين، أو المكياج.`,
   };
 }
 
@@ -115,6 +118,11 @@ export function AiChat() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const speech = useSpeech();
+  const hasVipAccess = useHasVipAccess();
+  const voiceInput = useVoiceInput((transcript) => {
+    setInput((cur) => (cur ? `${cur} ${transcript}` : transcript));
+  });
+  const displayCompanionName = (hasVipAccess && profile.companionName) || "رَونق";
   const { status: weatherStatus, weather } = useRealWeather();
   const weatherPrompt =
     weatherStatus === "ready" && weather
@@ -135,6 +143,7 @@ export function AiChat() {
     companionGreeting({
       name: profile.name || "",
       streak,
+      companionName: displayCompanionName,
       lastAnalysis: analyses[0] ? { overall: analyses[0].overall, ts: analyses[0].ts } : undefined,
     })
   );
@@ -191,6 +200,7 @@ export function AiChat() {
             makeupLevel: profile.makeupLevel,
             personalityMode: profile.personalityMode,
             dialect: profile.dialect,
+            companionName: profile.companionName,
           },
           cabinetProducts: cabinet.map((c) => c.name).slice(0, 20),
           latestAnalysis,
@@ -242,15 +252,29 @@ export function AiChat() {
       <div className="flex items-center justify-between px-1 py-2 mb-2">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full rawnak-rose-gradient grid place-items-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div
+              className={cn(
+                "w-10 h-10 rounded-full grid place-items-center",
+                hasVipAccess ? "rawnak-rosegold-gradient" : "rawnak-rose-gradient"
+              )}
+            >
+              {hasVipAccess ? (
+                <Crown className="w-5 h-5 text-black" />
+              ) : (
+                <Sparkles className="w-5 h-5 text-white" />
+              )}
             </div>
             <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background" />
           </div>
           <div>
-            <p className="font-bold text-sm">خبيرة الجمال رَونق</p>
+            <p className="font-bold text-sm">خبيرة الجمال {displayCompanionName}</p>
             <p className="text-xs text-emerald-600 flex items-center gap-1">
               متاحة الآن
+              {hasVipAccess && (
+                <span className="px-1.5 py-0.5 rounded-full rawnak-rosegold-gradient text-black text-[9px] font-bold flex items-center gap-0.5">
+                  <Crown className="w-2.5 h-2.5" /> VIP
+                </span>
+              )}
               {profile.personalityMode === "romantic" && (
                 <span className="px-1.5 py-0.5 rounded-full rawnak-rosegold-gradient text-black text-[9px] font-bold">
                   ♡ رومانسي
@@ -302,7 +326,7 @@ export function AiChat() {
           <div className="flex flex-col items-center text-center py-8">
             <img
               src="/rawnak-logo.jpg"
-              alt="رَونق"
+              alt={displayCompanionName}
               className="w-14 h-14 rounded-2xl object-cover rawnak-glow"
             />
             <h3 className="mt-4 text-lg font-bold">{greeting.title}</h3>
@@ -434,10 +458,26 @@ export function AiChat() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="اكتبي رسالتكِ..."
+            placeholder={voiceInput.listening ? "أستمع إليكِ..." : "اكتبي رسالتكِ..."}
             disabled={loading}
             className="flex-1 h-12 px-4 rounded-2xl bg-card border border-border text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
           />
+          {hasVipAccess && voiceInput.supported && (
+            <button
+              type="button"
+              onClick={() => (voiceInput.listening ? voiceInput.stop() : voiceInput.start())}
+              disabled={loading}
+              className={cn(
+                "w-12 h-12 rounded-2xl grid place-items-center shrink-0 border transition-colors",
+                voiceInput.listening
+                  ? "bg-red-500 text-white border-red-500 animate-pulse"
+                  : "rawnak-rosegold-gradient text-black border-transparent"
+              )}
+              aria-label={voiceInput.listening ? "إيقاف الاستماع" : "التحدث صوتيًا"}
+            >
+              {voiceInput.listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+          )}
           <button
             type="submit"
             disabled={loading || !input.trim()}

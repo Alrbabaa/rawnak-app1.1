@@ -61,8 +61,10 @@ import {
   Trash2,
   Ban,
   EyeOff,
+  Lock,
 } from "lucide-react";
 import { CURRENCY_MAP } from "@/lib/currencies";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { FeedbackModal } from "@/components/rawnak/feedback-modal";
 import { BlockedUsersModal } from "@/components/rawnak/blocked-users-modal";
@@ -761,6 +763,44 @@ export function ProfileScreen() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Custom AI companion name — VIP perk */}
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-muted/40 border border-border/50">
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-2xl grid place-items-center shrink-0",
+                      hasVipAccess ? "rawnak-rosegold-gradient text-black" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {hasVipAccess ? <Sparkle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs">اسم خبيرة الجمال</p>
+                    {hasVipAccess ? (
+                      <Input
+                        defaultValue={profile.companionName || ""}
+                        placeholder="رَونق"
+                        maxLength={20}
+                        className="h-8 mt-1 text-xs rounded-xl bg-background"
+                        onBlur={(e) => {
+                          const trimmed = e.target.value.trim();
+                          if (trimmed === (profile.companionName || "")) return;
+                          updateProfile({ companionName: trimmed || null });
+                          toast(trimmed ? `أصبح اسمها ${trimmed} ✦` : "أُعيد الاسم الافتراضي رَونق");
+                        }}
+                      />
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        اختاري اسمًا خاصًا لخبيرة جمالكِ — ميزة VIP
+                      </p>
+                    )}
+                  </div>
+                  {!hasVipAccess && (
+                    <Button size="sm" variant="outline" className="h-7 text-[11px] rounded-xl shrink-0" onClick={() => setView("vip")}>
+                      VIP
+                    </Button>
+                  )}
                 </div>
 
                 {/* Country & Currency — auto-detected from device location,

@@ -20,6 +20,11 @@ interface ReqBody {
     makeupLevel?: string | null;
     personalityMode?: "professional" | "romantic";
     dialect?: "msa" | "khaleeji" | "masri" | "shami" | "iraqi" | "jazaeri";
+    // Custom AI companion name — VIP-only perk. Re-validated below against
+    // gate.isPremium (server truth from the just-checked feature gate), so
+    // a modified client can't send this for a non-VIP account and have it
+    // used.
+    companionName?: string | null;
   };
   latestAnalysis?: {
     overall?: number;
@@ -131,6 +136,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "الرسالة مطلوبة" }, { status: 400 });
     }
 
+    // VIP-only perk — re-validated against gate.isPremium (server truth),
+    // never trusted from the client alone.
+    const companionName =
+      gate.isPremium && profile?.companionName ? profile.companionName.trim().slice(0, 30) || null : null;
+    const displayName = companionName || "رَونق";
+
     const profileLines: string[] = [];
     if (profile?.name) profileLines.push(`اسم المستخدمة: ${profile.name}`);
     if (profile?.age) profileLines.push(`العمر: ${profile.age} سنة`);
@@ -202,7 +213,9 @@ export async function POST(req: NextRequest) {
 - تتفهّمين مشاعر المستخدمة وتُحفّزينها بلطف دون إحراج، بذكاء عاطفي حقيقي لا عبارات جاهزة.
 - صادقة: تنصحين باستشارة طبيب الجلدية عند الحالات الطبية.`;
 
-    const systemPrompt = `أنتِ "رَونق"، خبيرة الجمال والعناية بالبشرة الشخصية بالذكاء الاصطناعي. أنتِ مساعدة شخصية مفضّلة لكل مستخدمة، تفهمين بشرتها وأسلوب حياتها وأهدافها الجمالية بعمق.
+    const systemPrompt = `أنتِ "${displayName}"، خبيرة الجمال والعناية بالبشرة الشخصية بالذكاء الاصطناعي${
+      companionName ? ` (هذا الاسم اختارته المستخدمة لكِ بنفسها — تفاعلي معه بطبيعية كأنه اسمكِ الحقيقي دائمًا)` : ""
+    }. أنتِ مساعدة شخصية مفضّلة لكل مستخدمة، تفهمين بشرتها وأسلوب حياتها وأهدافها الجمالية بعمق.
 
 ${personalityBlock}
 
@@ -233,7 +246,7 @@ ${flairInstruction}${dialectLine ? `\n${dialectLine}` : ""}`;
 
     const usage = await recordFeatureUse(gate.userRef, "aiChat", "chat", gate.usageCount, gate.isPremium, gate.limit);
 
-    return NextResponse.json({ response, usage });
+    return NextResponse.json({ response, usage, companionName: displayName });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "خطأ غير معروف";
     console.error("[chat] error:", msg);
