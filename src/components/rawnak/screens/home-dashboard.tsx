@@ -51,6 +51,7 @@ import { SkincareStreakIndicator } from "@/components/rawnak/skincare-streak-ind
 import { PartnerDiscountCardsSection } from "@/components/rawnak/partner-discount-cards";
 import { useHasVipAccess } from "@/hooks/use-vip-access";
 import { RawnakTodayCard } from "@/components/rawnak/rawnak-today-card";
+import { RawnakGiftWelcome } from "@/components/rawnak/rawnak-gift-welcome";
 
 export function HomeDashboard() {
   const {
@@ -220,6 +221,10 @@ export function HomeDashboard() {
           </div>
         </div>
       </motion.div>
+
+      {/* One-time reveal of the "أهدي VIP" welcome gift, if she signed up
+          via a friend's code — see rawnak-gift-welcome.tsx */}
+      <RawnakGiftWelcome />
 
       {/* Rawnak Today — personalized daily brief, built from whatever real
           context she has (profile, latest analysis, cabinet, routine, an

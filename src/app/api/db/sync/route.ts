@@ -304,6 +304,9 @@ export async function GET(req: NextRequest) {
         referralCode,
         referralInvitesCount: user.referralInvitesCount ?? 0,
         referralRewardUnlockedAt: user.referralRewardUnlockedAt ?? null,
+        // Who gifted her the welcome VIP trial below, for display only
+        // (see rawnak-gift-welcome.tsx) — null for organic signups.
+        referredByName: user.referredByName ?? null,
         // Repeatable VIP trial earned via referrals — see
         // src/lib/referral.ts (extendVipTrial) and src/lib/vip-access.ts
         // (computeVipAccess, which combines this with isPremium).

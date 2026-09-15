@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, Gift, Share2, Copy, Loader2, Check } from "lucide-react";
-import { REFERRAL_REWARD_THRESHOLD, VIP_TRIAL_DAYS_PER_REWARD, referralShareLink } from "@/lib/referral";
+import { REFERRAL_REWARD_THRESHOLD, VIP_TRIAL_DAYS_PER_REWARD, WELCOME_GIFT_TRIAL_DAYS, referralShareLink } from "@/lib/referral";
 import { generateInviteCard } from "@/lib/share/invite-card";
 import { shareImage } from "@/lib/share/share-image";
 import { trackEvent } from "@/lib/track-event";
@@ -56,7 +56,7 @@ export function InviteScreen() {
         blob,
         filename: `rawnak-invite-${code}.png`,
         title: "جرّبي رَونق معي ✦",
-        text: `جرّبي رَونق — خبيرتكِ الشخصية بالذكاء الاصطناعي للجمال والعناية بالبشرة ✦ سجّلي بكودي "${code}" ${referralShareLink(code)}`,
+        text: `أهديكِ ${WELCOME_GIFT_TRIAL_DAYS} أيام VIP مجانًا في رَونق — خبيرتكِ الشخصية بالذكاء الاصطناعي للجمال والعناية بالبشرة ✦ سجّلي بكودي "${code}" ${referralShareLink(code)}`,
       });
       if (result.fallback === "downloaded") {
         toast.success("تم حفظ بطاقة الدعوة — شاركيها من معرض الصور ✦");
@@ -91,9 +91,9 @@ export function InviteScreen() {
         >
           <Gift className="w-8 h-8 text-black" />
         </motion.div>
-        <h1 className="text-2xl font-extrabold">ادعي صديقاتكِ ✦</h1>
+        <h1 className="text-2xl font-extrabold">أهدي صديقاتكِ VIP ✦</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          كل صديقة تنضم بكودكِ تقرّبكِ من مكافأة "دائرة التوهج"
+          كل صديقة تنضم بكودكِ تحصل فورًا على {WELCOME_GIFT_TRIAL_DAYS} أيام VIP هدية منكِ — وتقرّبكِ من مكافأة "دائرة التوهج"
         </p>
       </div>
 

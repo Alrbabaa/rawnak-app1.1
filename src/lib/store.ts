@@ -302,6 +302,11 @@ export interface UserProfile {
   // Enforced VIP-only server-side too (see /api/chat) so a modified client
   // can't send it and have it used for a non-VIP account.
   companionName: string | null;
+  // Whether she's dismissed the "🎁 <name> أهدتكِ VIP" welcome banner —
+  // purely local UI state (same non-synced pattern as dialect/
+  // companionName above), not server truth. The actual gift (the trial
+  // time itself) lives in vipTrialExpiresAt, which IS server truth.
+  giftWelcomeDismissed: boolean;
   country?: string; // e.g. "السعودية", "الأردن", "مصر", "الإمارات"
   currency?: string; // e.g. "SAR", "JOD", "EGP", "AED", "USD"
   // Share-card photo preference — client-local only (same non-synced
@@ -324,6 +329,10 @@ export interface UserProfile {
   referralCode: string | null;
   referralInvitesCount: number;
   referralRewardUnlockedAt: number | null;
+  // Name of whoever's code she signed up with, if any — server-set once
+  // at signup, used only to display the "🎁 <name> أهدتكِ VIP" welcome
+  // gift banner (rawnak-gift-welcome.tsx). Null for organic signups.
+  referredByName: string | null;
   // Repeatable VIP trial earned via referrals (+7 days per every 3
   // invites, stacking) — server-truth, written only by
   // /api/auth/complete-signup. Combine with isPremium via
@@ -696,6 +705,7 @@ const EMPTY_PROFILE: UserProfile = {
   personalityMode: "professional",
   dialect: "msa",
   companionName: null,
+  giftWelcomeDismissed: false,
   shareCardIncludePhoto: false,
   remindersEnabled: false,
   isPremium: false,
@@ -704,6 +714,7 @@ const EMPTY_PROFILE: UserProfile = {
   referralCode: null,
   referralInvitesCount: 0,
   referralRewardUnlockedAt: null,
+  referredByName: null,
   vipTrialExpiresAt: null,
   cabinetAiScanUsed: 0,
   avatar: "",

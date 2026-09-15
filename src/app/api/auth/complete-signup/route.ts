@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { getSessionFromRequest } from "@/lib/firebase-session";
-import { generateReferralCode, extendVipTrial, REFERRAL_REWARD_THRESHOLD } from "@/lib/referral";
+import { generateReferralCode, extendVipTrial, REFERRAL_REWARD_THRESHOLD, WELCOME_GIFT_TRIAL_MS } from "@/lib/referral";
 
 export const runtime = "nodejs";
 
@@ -109,7 +109,30 @@ async function creditReferral(
         email: userData.email,
         joinedAt: Date.now(),
       });
-      tx.set(userRef, { referredByUid: referrerUid }, { merge: true });
+      // referredByName is denormalized here (not looked up live) purely
+      // for display — "🎁 <name> أهدتكِ 3 أيام VIP" on the invitee's home
+      // screen (see rawnak-gift-welcome.tsx) — so that banner never needs
+      // an extra read of the referrer's own profile.
+      tx.set(
+        userRef,
+        {
+          referredByUid: referrerUid,
+          referredByName: referrerData.name || null,
+          // "أهدي VIP" — the invitee's welcome gift: a real VIP trial,
+          // granted once, immediately, funded by the exact same
+          // vipTrialExpiresAt/extendVipTrial mechanism the referrer's own
+          // every-3-invites reward uses below. Never touches isPremium or
+          // RevenueCat — this is trial time, same as any other trial time.
+          // existingData.vipTrialExpiresAt is whatever she already had
+          // before this signup (normally none, but stacks safely either
+          // way — see extendVipTrial's doc comment).
+          vipTrialExpiresAt: extendVipTrial(
+            existingData.vipTrialExpiresAt as number | null | undefined,
+            WELCOME_GIFT_TRIAL_MS
+          ),
+        },
+        { merge: true }
+      );
 
       const rewardUpdates: Record<string, unknown> = { referralInvitesCount: newCount };
       // One-time cosmetic badge — first crossing of the threshold only.

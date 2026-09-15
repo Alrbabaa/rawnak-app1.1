@@ -24,16 +24,28 @@ export const REFERRAL_REWARD_THRESHOLD = 3;
 export const VIP_TRIAL_DAYS_PER_REWARD = 7;
 const VIP_TRIAL_MS_PER_REWARD = VIP_TRIAL_DAYS_PER_REWARD * 24 * 60 * 60 * 1000;
 
+// The "أهدي VIP" gift — a welcome VIP trial for the INVITEE, granted once,
+// immediately on signup via someone's code (see complete-signup/route.ts).
+// Separate from VIP_TRIAL_DAYS_PER_REWARD above (that one rewards the
+// referrer, this one rewards the friend she just invited) and uses the
+// exact same real trial mechanism (vipTrialExpiresAt + extendVipTrial) —
+// no separate/fake benefit, no RevenueCat involvement, just the same
+// server-truth trial field two different code paths can extend.
+export const WELCOME_GIFT_TRIAL_DAYS = 3;
+export const WELCOME_GIFT_TRIAL_MS = WELCOME_GIFT_TRIAL_DAYS * 24 * 60 * 60 * 1000;
+
 /**
  * Stacking/renewable extension: if she already has time left on an active
- * trial, the new week is added on top of that remaining time rather than
- * overwriting it (inviting again before the current trial runs out should
- * never shorten what she already earned). If the previous trial already
- * expired (or never existed), the new week starts fresh from now.
+ * trial, the new time is added on top of that remaining time rather than
+ * overwriting it (earning more trial before the current one runs out
+ * should never shorten what she already has). If the previous trial
+ * already expired (or never existed), the new period starts fresh from
+ * now. `ms` defaults to one referral-reward week; the welcome-gift path
+ * in complete-signup/route.ts passes WELCOME_GIFT_TRIAL_MS instead.
  */
-export function extendVipTrial(currentExpiresAt: number | null | undefined): number {
+export function extendVipTrial(currentExpiresAt: number | null | undefined, ms: number = VIP_TRIAL_MS_PER_REWARD): number {
   const base = currentExpiresAt && currentExpiresAt > Date.now() ? currentExpiresAt : Date.now();
-  return base + VIP_TRIAL_MS_PER_REWARD;
+  return base + ms;
 }
 
 // Unambiguous uppercase alphabet — no 0/O, 1/I/L — so a code read aloud or

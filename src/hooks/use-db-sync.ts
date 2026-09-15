@@ -171,6 +171,7 @@ export function useDbSync() {
           referralCode: serverProfile.referralCode ?? null,
           referralInvitesCount: serverProfile.referralInvitesCount ?? 0,
           referralRewardUnlockedAt: serverProfile.referralRewardUnlockedAt ?? null,
+          referredByName: serverProfile.referredByName ?? null,
           cabinetAiScanUsed: serverProfile.cabinetAiScanUsed ?? 0,
         });
         if (serverProfile.referralRewardUnlockedAt) {

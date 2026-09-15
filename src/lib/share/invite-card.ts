@@ -1,5 +1,7 @@
 "use client";
 
+import { WELCOME_GIFT_TRIAL_DAYS } from "@/lib/referral";
+
 // Portrait 9:16 — same story-format canvas as glow-card.ts, and the same
 // hand-picked hex approximations of the app's oklch brand tokens (see that
 // file's header comment for why hex instead of oklch here).
@@ -119,7 +121,7 @@ export async function generateInviteCard(referralCode: string, inviterName?: str
   const roseText = ctx.createLinearGradient(WIDTH / 2 - 320, 0, WIDTH / 2 + 320, 0);
   roseText.addColorStop(0, ROSE_FROM);
   roseText.addColorStop(1, ROSE_TO);
-  const headline = inviterName ? `${inviterName} تدعوكِ لتجربة رَونق ✦` : "جرّبي رَونق معي ✦";
+  const headline = inviterName ? `${inviterName} تُهديكِ VIP في رَونق ✦` : "هدية VIP بانتظاركِ في رَونق ✦";
   wrapCenterText(ctx, headline, WIDTH / 2, 560, "700 58px Cairo, sans-serif", "#ffffff", WIDTH - 180, 74);
 
   centerText(
@@ -160,13 +162,15 @@ export async function generateInviteCard(referralCode: string, inviterName?: str
   ctx.direction = "rtl";
 
   // What they get
-  centerText(
+  wrapCenterText(
     ctx,
-    "سجّلي بالكود واحصلي على تجربة جمال مخصصة لكِ",
+    `سجّلي بالكود واحصلي فورًا على ${WELCOME_GIFT_TRIAL_DAYS} أيام VIP مجانًا`,
     WIDTH / 2,
-    panelY + panelH + 100,
+    panelY + panelH + 90,
     "600 36px Cairo, sans-serif",
-    "#ffffff"
+    "#ffffff",
+    WIDTH - 160,
+    46
   );
 
   // CTA footer
